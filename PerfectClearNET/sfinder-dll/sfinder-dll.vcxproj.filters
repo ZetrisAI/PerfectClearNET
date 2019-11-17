@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="finder\perfect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="core\bits.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -39,11 +36,11 @@
     <ClCompile Include="callback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="finder\perfect_clear.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="finder\perfect.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="core\bits.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,6 +63,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="callback.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="finder\perfect_clear.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="finder\spins.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="finder\types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

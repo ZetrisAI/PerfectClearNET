@@ -82,8 +82,9 @@ namespace PerfectClearNET {
         /// <param name="holdAllowed">Is holding is allowed in the game.</param>
         /// <param name="maxHeight">The maximum allowed height of the Perfect Clear. Used to control greed.</param>
         /// <param name="swap">Specifies if garbage blocking is enabled (from Puyo Puyo Tetris' Swap mode). If set to true, the Finder will prioritize PCs with a high combo.</param>
+        /// <param name="searchType">The search priority, in order: no softdrop, T-spin, All-spin with Mini, All-spin without Mini.</param>
         /// <param name="combo">The combo count.</param>
-        public static async void Find(int[,] field, int[] queue, int current, int? hold, bool holdAllowed, int maxHeight, bool swap, int combo) {
+        public static async void Find(int[,] field, int[] queue, int current, int? hold, bool holdAllowed, int maxHeight, bool swap, int searchType, int combo) {
             int c = 0;
             int t = -1;
             string f = "";
@@ -114,7 +115,7 @@ namespace PerfectClearNET {
             string result = "";
 
             await Task.Run(() => {
-                result = Interface.Process(f, q, h, t, maxHeight, swap, combo, out long time);
+                result = Interface.Process(f, q, h, t, maxHeight, swap, searchType, combo, out long time);
 
                 LastSolution = new List<Operation>();
                 LastTime = time;

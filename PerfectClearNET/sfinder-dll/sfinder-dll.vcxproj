@@ -94,8 +94,8 @@
     <ClCompile Include="core\moves.cpp" />
     <ClCompile Include="core\piece.cpp" />
     <ClCompile Include="core\srs.cpp" />
+    <ClCompile Include="finder\perfect_clear.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="finder\perfect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="callback.hpp" />
@@ -105,7 +105,9 @@
     <ClInclude Include="core\piece.hpp" />
     <ClInclude Include="core\srs.hpp" />
     <ClInclude Include="core\types.hpp" />
-    <ClInclude Include="finder\perfect.hpp" />
+    <ClInclude Include="finder\perfect_clear.hpp" />
+    <ClInclude Include="finder\spins.hpp" />
+    <ClInclude Include="finder\types.hpp" />
     <ClInclude Include="main.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
