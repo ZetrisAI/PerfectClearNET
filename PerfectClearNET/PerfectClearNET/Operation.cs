@@ -38,8 +38,9 @@ namespace PerfectClearNET {
 
             Piece = PerfectClear.FromFinder[parsed[0]];
             X = parsed[1];
-            Y = 23 - parsed[2];
             R = parsed[3];
+
+            Y = 23 - parsed[2] - Convert.ToInt32(Piece == 6 && R == 3);
         }
 
         /// <summary>
