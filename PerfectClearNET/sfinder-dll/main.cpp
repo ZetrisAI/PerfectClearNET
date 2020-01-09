@@ -35,42 +35,59 @@ core::PieceType charToPiece(char x) {
 }
 
 DLL void action(const char* _field, const char* _queue, const char* _hold, int height, int max_height, bool swap, int searchtype, int combo, bool b2b, char* _str, int _len) {
-	auto field = core::createField(_field);
-
-	if (max_height < 0) max_height = 0;
-	if (max_height > 20) max_height = 20;
-
-	auto pieces = std::vector<core::PieceType>();
-
-	bool holdEmpty = _hold[0] == 'E';
-	bool holdAllowed = _hold[0] != 'X';
-
-	if (!holdEmpty)
-		pieces.push_back(charToPiece(_hold[0]));
-	
-	int max_pieces = (5 * max_height + 3) >> 1;
-
-	for (int i = 0; i < max_pieces && _queue[i] != '\0'; i++)
-		pieces.push_back(charToPiece(_queue[i]));
-		
+	bool solved = false;
 	std::stringstream out;
 
-	bool solved = false;
+	auto field = core::createField(_field);
 
-	for (int i = height; i <= max_height; i += 2) {
-		auto result = pcfinder.run(field, pieces, pieces.size(), i, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, true);
+	int minos_placed = 0;
 
-		if (!result.empty()) {
-			solved = true;
+	for (core::Bitboard v : field.boards)
+		minos_placed = BitsSetTable256[v & 0xff] +
+		BitsSetTable256[(v >> 8) & 0xff] +
+		BitsSetTable256[(v >> 16) & 0xff] +
+		BitsSetTable256[(v >> 24) & 0xff] +
+		BitsSetTable256[(v >> 32) & 0xff] +
+		BitsSetTable256[(v >> 40) & 0xff] +
+		BitsSetTable256[(v >> 48) & 0xff] +
+		BitsSetTable256[v >> 56];
 
-			for (const auto &item : result) {
-				out << item.pieceType << ","
-					<< item.x << ","
-					<< item.y << ","
-					<< item.rotateType << "|";
+	if (minos_placed % 2 == 0) {
+		if (max_height < 0) max_height = 0;
+		if (max_height > 20) max_height = 20;
+
+		auto pieces = std::vector<core::PieceType>();
+
+		bool holdEmpty = _hold[0] == 'E';
+		bool holdAllowed = _hold[0] != 'X';
+
+		if (!holdEmpty)
+			pieces.push_back(charToPiece(_hold[0]));
+
+		int max_pieces = (max_height * 10 - minos_placed) / 4 + 1;
+
+		for (int i = 0; i < max_pieces && _queue[i] != '\0'; i++)
+			pieces.push_back(charToPiece(_queue[i]));
+
+		height += minos_placed % 4 == (height % 2)? 0 : 2;
+
+		for (; height <= max_height; height += 2) {
+			int pieces_required = (height * 10 - minos_placed) / 4 + 1;
+
+			auto result = pcfinder.run(field, pieces, pieces_required, height, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, true);
+
+			if (!result.empty()) {
+				solved = true;
+
+				for (const auto& item : result) {
+					out << item.pieceType << ","
+						<< item.x << ","
+						<< item.y << ","
+						<< item.rotateType << "|";
+				}
+
+				break;
 			}
-
-			i = 100;
 		}
 	}
 
