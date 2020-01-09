@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -84,7 +85,8 @@ namespace PerfectClearNET {
         /// <param name="swap">Specifies if garbage blocking is enabled (from Puyo Puyo Tetris' Swap mode). If set to true, the Finder will prioritize PCs with a high combo.</param>
         /// <param name="searchType">The search priority, in order: no softdrop, T-spin, All-spin with Mini, All-spin without Mini.</param>
         /// <param name="combo">The combo count.</param>
-        public static async void Find(int[,] field, int[] queue, int current, int? hold, bool holdAllowed, int maxHeight, bool swap, int searchType, int combo) {
+        /// <param name="b2b">Do you have back-to-back?</param>
+        public static async void Find(int[,] field, int[] queue, int current, int? hold, bool holdAllowed, int maxHeight, bool swap, int searchType, int combo, bool b2b) {
             int c = 0;
             int t = -1;
             string f = "";
@@ -107,15 +109,13 @@ namespace PerfectClearNET {
             for (int i = 0; i < queue.Length; i++)
                 q += ToChar[queue[i]];
 
-            string h = (hold == null) ? "E" : ToChar[hold.Value];
+            string h = (hold == null)? "E" : ToChar[hold.Value];
             if (!holdAllowed) h = "X";
-
-            if ((c % 4 == 2 && t % 2 == 0) || (c % 4 == 0 && t % 2 == 1)) t += 1;
 
             string result = "";
 
             await Task.Run(() => {
-                result = Interface.Process(f, q, h, t, maxHeight, swap, searchType, combo, out long time);
+                result = Interface.Process(f, q, h, t, maxHeight, swap, searchType, combo, b2b, out long time);
 
                 LastSolution = new List<Operation>();
                 LastTime = time;
