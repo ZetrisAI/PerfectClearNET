@@ -39,6 +39,9 @@
     <ClCompile Include="finder\perfect_clear.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="finder\two_lines_pc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core\bits.hpp">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="finder\types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="finder\two_lines_pc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

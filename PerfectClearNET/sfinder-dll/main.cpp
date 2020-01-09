@@ -34,7 +34,7 @@ core::PieceType charToPiece(char x) {
 	}
 }
 
-DLL void action(const char* _field, const char* _queue, const char* _hold, int height, int max_height, bool swap, int searchtype, int combo, char* _str, int _len) {
+DLL void action(const char* _field, const char* _queue, const char* _hold, int height, int max_height, bool swap, int searchtype, int combo, bool b2b, char* _str, int _len) {
 	auto field = core::createField(_field);
 
 	if (max_height < 0) max_height = 0;
@@ -58,7 +58,7 @@ DLL void action(const char* _field, const char* _queue, const char* _hold, int h
 	bool solved = false;
 
 	for (int i = height; i <= max_height; i += 2) {
-		auto result = pcfinder.run(field, pieces, pieces.size(), i, holdEmpty, holdAllowed, !swap, searchtype, combo);
+		auto result = pcfinder.run(field, pieces, pieces.size(), i, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, true);
 
 		if (!result.empty()) {
 			solved = true;
