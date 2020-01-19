@@ -39,7 +39,7 @@ namespace finder {
         best_ = FastRecord{
                 solution, hold,
                 current.softdropCount, current.holdCount, current.lineClearCount, current.maxCombo,
-                extractLastHoldPriority(configure.lastHoldPriority, hold)
+                extractLastHoldPriority(configure.lastHoldPriority, hold), current.frames
         };
     }
 
@@ -53,6 +53,17 @@ namespace finder {
         return best_.softdropCount < current.softdropCount;
     }
 
+	bool shouldUpdateFrames(
+		const FastRecord& oldRecord, const FastCandidate& newRecord
+	) {
+		int newFrames = newRecord.holdCount + newRecord.frames;
+		int oldFrames = oldRecord.holdCount + oldRecord.frames;
+
+		return newFrames == oldFrames
+			? newRecord.holdCount < oldRecord.holdCount
+			: newFrames < oldFrames;
+	}
+
     bool shouldUpdateLeastLineClear(
             const FastRecord &oldRecord, const FastCandidate &newRecord
     ) {
@@ -64,7 +75,7 @@ namespace finder {
             return newRecord.lineClearCount < oldRecord.lineClearCount;
         }
 
-        return newRecord.holdCount < oldRecord.holdCount;
+        return shouldUpdateFrames(oldRecord, newRecord);
     }
 
     bool shouldUpdateMostLineClear(
@@ -82,7 +93,7 @@ namespace finder {
             return oldRecord.lineClearCount < newRecord.lineClearCount;
         }
 
-        return newRecord.holdCount < oldRecord.holdCount;
+        return shouldUpdateFrames(oldRecord, newRecord);
     }
 
     bool Recorder<FastCandidate, FastRecord>::shouldUpdate(
@@ -125,9 +136,9 @@ namespace finder {
     ) {
         auto hold = 0 <= current.holdIndex ? configure.pieces[current.holdIndex] : core::PieceType::Empty;
         best_ = TSpinRecord{
-                solution, 0 <= current.holdIndex ? configure.pieces[current.holdIndex] : core::PieceType::Empty,
+                solution, hold,
                 current.softdropCount, current.holdCount, current.lineClearCount,
-                current.maxCombo, current.tSpinAttack, extractLastHoldPriority(configure.lastHoldPriority, hold)
+                current.maxCombo, current.tSpinAttack, extractLastHoldPriority(configure.lastHoldPriority, hold), current.frames
         };
     }
 
@@ -149,6 +160,17 @@ namespace finder {
         return false;
     }
 
+	bool shouldUpdateFrames(
+		const TSpinRecord& oldRecord, const TSpinCandidate& newRecord
+	) {
+		int newFrames = newRecord.holdCount + newRecord.frames;
+		int oldFrames = oldRecord.holdCount + oldRecord.frames;
+
+		return newFrames == oldFrames
+			? newRecord.holdCount < oldRecord.holdCount
+			: newFrames < oldFrames;
+	}
+
     bool shouldUpdateLeastLineClear(
             const TSpinRecord &oldRecord, const TSpinCandidate &newRecord
     ) {
@@ -164,7 +186,7 @@ namespace finder {
             return newRecord.lineClearCount < oldRecord.lineClearCount;
         }
 
-        return newRecord.holdCount < oldRecord.holdCount;
+        return shouldUpdateFrames(oldRecord, newRecord);
     }
 
     bool shouldUpdateMostLineClear(
@@ -186,7 +208,7 @@ namespace finder {
             return oldRecord.lineClearCount < newRecord.lineClearCount;
         }
 
-        return newRecord.holdCount < oldRecord.holdCount;
+        return shouldUpdateFrames(oldRecord, newRecord);
     }
 
     bool Recorder<TSpinCandidate, TSpinRecord>::shouldUpdate(
@@ -230,9 +252,9 @@ namespace finder {
     ) {
         auto hold = 0 <= current.holdIndex ? configure.pieces[current.holdIndex] : core::PieceType::Empty;
         best_ = AllSpinsRecord{
-                solution, 0 <= current.holdIndex ? configure.pieces[current.holdIndex] : core::PieceType::Empty,
+                solution, hold,
                 current.softdropCount, current.holdCount, current.lineClearCount,
-                current.maxCombo, current.spinAttack, extractLastHoldPriority(configure.lastHoldPriority, hold)
+                current.maxCombo, current.spinAttack, extractLastHoldPriority(configure.lastHoldPriority, hold), current.frames
         };
     }
 
@@ -242,6 +264,17 @@ namespace finder {
         // There is a high possibility of spin attack until the last piece. so, it's difficult to prune along the way
         return false;
     }
+
+	bool shouldUpdateFrames(
+		const AllSpinsRecord& oldRecord, const AllSpinsCandidate& newRecord
+	) {
+		int newFrames = newRecord.holdCount + newRecord.frames;
+		int oldFrames = oldRecord.holdCount + oldRecord.frames;
+
+		return newFrames == oldFrames
+			? newRecord.holdCount < oldRecord.holdCount
+			: newFrames < oldFrames;
+	}
 
     bool shouldUpdateLeastLineClear(
             const AllSpinsRecord &oldRecord, const AllSpinsCandidate &newRecord
@@ -258,7 +291,7 @@ namespace finder {
             return newRecord.lineClearCount < oldRecord.lineClearCount;
         }
 
-        return newRecord.holdCount < oldRecord.holdCount;
+        return shouldUpdateFrames(oldRecord, newRecord);
     }
 
     bool shouldUpdateMostLineClear(
@@ -280,7 +313,7 @@ namespace finder {
             return oldRecord.lineClearCount < newRecord.lineClearCount;
         }
 
-        return newRecord.holdCount < oldRecord.holdCount;
+        return shouldUpdateFrames(oldRecord, newRecord);
     }
 
     bool Recorder<AllSpinsCandidate, AllSpinsRecord>::shouldUpdate(

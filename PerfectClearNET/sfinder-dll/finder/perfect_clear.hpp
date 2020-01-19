@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "spins.hpp"
 #include "two_lines_pc.hpp"
+#include "frames.hpp"
 
 #include "../core/piece.hpp"
 #include "../core/moves.hpp"
@@ -191,6 +192,7 @@ namespace finder {
                 int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
                 int nextTSpinAttack = candidate.tSpinAttack + tSpinAttack;
                 bool nextB2b = 0 < numCleared ? (tSpinAttack != 0 || numCleared == 4) : candidate.b2b;
+				int nextFrames = candidate.frames + getFrames(operation);
 
                 auto nextDepth = candidate.depth + 1;
 
@@ -199,7 +201,7 @@ namespace finder {
                     auto bestCandidate = TSpinCandidate{
                             freeze, nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                             nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                            nextTSpinAttack, nextB2b, nextLeftNumOfT,
+                            nextTSpinAttack, nextB2b, nextLeftNumOfT, nextFrames
                     };
                     finder->accept(configure, solution, bestCandidate);
                     return;
@@ -216,7 +218,7 @@ namespace finder {
                 auto nextCandidate = TSpinCandidate{
                         freeze, nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                         nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                        nextTSpinAttack, nextB2b, nextLeftNumOfT,
+                        nextTSpinAttack, nextB2b, nextLeftNumOfT, nextFrames
                 };
                 finder->search(configure, nextCandidate, solution);
             }
@@ -267,6 +269,7 @@ namespace finder {
 
                 int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                 int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                int nextFrames = candidate.frames + getFrames(operation);
 
                 auto nextDepth = candidate.depth + 1;
 
@@ -274,7 +277,7 @@ namespace finder {
                 if (nextLeftLine == 0) {
                     auto bestCandidate = FastCandidate{
                             freeze, nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                            nextSoftdropCount, nextHoldCount, nextLineClearCount
+                            nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
                     };
                     finder->accept(configure, solution, bestCandidate);
                     return;
@@ -290,7 +293,7 @@ namespace finder {
 
                 auto nextCandidate = FastCandidate{
                         freeze, nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                        nextSoftdropCount, nextHoldCount, nextLineClearCount
+                        nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
                 };
                 finder->search(configure, nextCandidate, solution);
             }
@@ -359,6 +362,7 @@ namespace finder {
                 int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
                 int nextTSpinAttack = candidate.spinAttack + spinAttack;
                 bool nextB2b = 0 < numCleared ? (spinAttack != 0 || numCleared == 4) : candidate.b2b;
+				int nextFrames = candidate.frames + getFrames(operation);
 
                 auto nextDepth = candidate.depth + 1;
 
@@ -367,7 +371,7 @@ namespace finder {
                     auto bestCandidate = AllSpinsCandidate{
                             freeze, nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                             nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                            nextTSpinAttack, nextB2b,
+                            nextTSpinAttack, nextB2b, nextFrames
                     };
                     finder->accept(configure, solution, bestCandidate);
                     return;
@@ -384,7 +388,7 @@ namespace finder {
                 auto nextCandidate = AllSpinsCandidate{
                         freeze, nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                         nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                        nextTSpinAttack, nextB2b,
+                        nextTSpinAttack, nextB2b, nextFrames
                 };
                 finder->search(configure, nextCandidate, solution);
             }
@@ -496,9 +500,9 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? FastCandidate{freeze, 0, -1, maxLine, 0, 0, 0, 0,
-                                                     initCombo, initCombo}
+                                                     initCombo, initCombo, 0}
                                      : FastCandidate{freeze, 1, 0, maxLine, 0, 0, 0, 0,
-                                                     initCombo, initCombo};
+                                                     initCombo, initCombo, 0};
 
                     auto finder = PCFindRunner<M, FastCandidate, FastRecord>(factory, moveGenerator, reachable);
                     return finder.run(configure, candidate);
@@ -512,9 +516,9 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? TSpinCandidate{freeze, 0, -1, maxLine, 0, 0, 0, 0,
-                                                      initCombo, initCombo, 0, initB2b, leftNumOfT}
+                                                      initCombo, initCombo, 0, initB2b, leftNumOfT, 0}
                                      : TSpinCandidate{freeze, 1, 0, maxLine, 0, 0, 0, 0,
-                                                      initCombo, initCombo, 0, initB2b, leftNumOfT};
+                                                      initCombo, initCombo, 0, initB2b, leftNumOfT, 0};
 
                     auto finder = PCFindRunner<M, TSpinCandidate, TSpinRecord>(factory, moveGenerator, reachable);
                     return finder.run(configure, candidate);
@@ -523,9 +527,9 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? AllSpinsCandidate{freeze, 0, -1, maxLine, 0, 0, 0, 0,
-                                                         initCombo, initCombo, 0, initB2b}
+                                                         initCombo, initCombo, 0, initB2b, 0}
                                      : AllSpinsCandidate{freeze, 1, 0, maxLine, 0, 0, 0, 0,
-                                                         initCombo, initCombo, 0, initB2b};
+                                                         initCombo, initCombo, 0, initB2b, 0};
 
                     auto finder = PCFindRunner<M, AllSpinsCandidate, AllSpinsRecord>(factory, moveGenerator, reachable);
                     return finder.run(configure, candidate);

@@ -38,6 +38,7 @@ namespace finder {
         const int lineClearCount;
         const int currentCombo;
         const int maxCombo;
+		const int frames;
     };
 
     struct FastRecord {
@@ -48,6 +49,7 @@ namespace finder {
         int lineClearCount;
         int maxCombo;
         int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+		int frames;
     };
 
     // For T-Spin search
@@ -65,6 +67,7 @@ namespace finder {
         const int tSpinAttack;
         const bool b2b;
         const int leftNumOfT;
+		const int frames;
     };
 
     struct TSpinRecord {
@@ -76,6 +79,7 @@ namespace finder {
         int maxCombo;
         int tSpinAttack;
         int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+		int frames;
     };
 
     // For all spins search
@@ -92,6 +96,7 @@ namespace finder {
         const int maxCombo;
         const int spinAttack;
         const bool b2b;
+		const int frames;
     };
 
     struct AllSpinsRecord {
@@ -103,6 +108,7 @@ namespace finder {
         int maxCombo;
         int spinAttack;
         int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+		int frames;
     };
 }
 
