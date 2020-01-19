@@ -97,6 +97,7 @@
     <ClCompile Include="finder\perfect_clear.cpp" />
     <ClCompile Include="finder\two_lines_pc.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="finder\frames.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="callback.hpp" />
@@ -111,6 +112,7 @@
     <ClInclude Include="finder\two_lines_pc.hpp" />
     <ClInclude Include="finder\types.hpp" />
     <ClInclude Include="main.hpp" />
+    <ClInclude Include="finder\frames.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
