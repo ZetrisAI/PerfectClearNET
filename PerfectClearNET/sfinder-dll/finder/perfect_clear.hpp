@@ -1,8 +1,6 @@
 #ifndef FINDER_PERFECT_HPP
 #define FINDER_PERFECT_HPP
 
-#include <atomic>
-
 #include "types.hpp"
 #include "spins.hpp"
 #include "two_lines_pc.hpp"
@@ -75,38 +73,17 @@ namespace finder {
     template<class C, class R>
     class Recorder;
 
-    class RunnerStatus {
-    public:
-        void resume() {
-            aborted_ = false;
-        }
-
-        void abort() {
-            aborted_ = true;
-        }
-
-        bool aborted() {
-            return aborted_;
-        }
-
-    private:
-        std::atomic<bool> aborted_ = false;
-    };
-
     // Main finder implementation
     template<class M = core::srs::MoveGenerator, class C = TSpinCandidate, class R = TSpinRecord>
     class PCFindRunner {
     public:
         PCFindRunner<M, C, R>(
-                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable,
-                RunnerStatus &status
-        ) : mover(Mover<M, C>(factory, moveGenerator, reachable)), recorder(Recorder<C, R>()),
-            status(status) {
-        }
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
+        ) : mover(Mover<M, C>(factory, moveGenerator, reachable)), recorder(Recorder<C, R>()) {}
 
         PCFindRunner<M, C, R>(
                 PCFindRunner<M, C, R> &&rhs
-        ) : mover(std::move(rhs.mover)), recorder(std::move(rhs.recorder)), status(rhs.status) {}
+        ) : mover(std::move(rhs.mover)), recorder(std::move(rhs.recorder)), {}
 
         Solution run(const Configure &configure, const core::Field &field, const C &candidate) {
             auto best = runRecord(configure, field, candidate);
@@ -144,7 +121,7 @@ namespace finder {
         }
 
         void search(const Configure &configure, const core::Field &field, const C &candidate, Solution &solution) {
-            if (status.aborted() || recorder.isWorseThanBest(configure.leastLineClears, candidate)) {
+            if (Abort() || recorder.isWorseThanBest(configure.leastLineClears, candidate)) {
                 return;
             }
 
@@ -220,7 +197,6 @@ namespace finder {
     private:
         Mover<M, C> mover;
         Recorder<C, R> recorder;
-        RunnerStatus &status;
     };
 
     // Mover implementations
@@ -949,9 +925,6 @@ namespace finder {
                     lastHoldPriority,
             };
 
-            // Reset status
-            status.resume();
-
             switch (searchTypes) {
                 case SearchTypes::Fast: {
                     // Create candidate
@@ -962,7 +935,7 @@ namespace finder {
                                                      initCombo, initCombo, 0};
 
                     auto finder = PCFindRunner<M, FastCandidate, FastRecord>(
-                            factory, moveGenerator, reachable, status
+                            factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
                 }
@@ -980,7 +953,7 @@ namespace finder {
                                                       initCombo, initCombo, 0, initB2b, leftNumOfT, 0};
 
                     auto finder = PCFindRunner<M, TSpinCandidate, TSpinRecord>(
-                            factory, moveGenerator, reachable, status
+                            factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
                 }
@@ -993,7 +966,7 @@ namespace finder {
                                                          initCombo, initCombo, 0, initB2b, 0};
 
                     auto finder = PCFindRunner<M, AllSpinsCandidate, AllSpinsRecord>(
-                            factory, moveGenerator, reachable, status
+                            factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
                 }
@@ -1103,7 +1076,6 @@ namespace finder {
         const core::Factory &factory;
         M &moveGenerator;
         core::srs_rotate_end::Reachable reachable;
-        RunnerStatus status{};
     };
 }
 
