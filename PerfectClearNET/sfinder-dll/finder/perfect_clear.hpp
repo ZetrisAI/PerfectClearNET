@@ -1,6 +1,8 @@
 #ifndef FINDER_PERFECT_HPP
 #define FINDER_PERFECT_HPP
 
+#include <atomic>
+
 #include "types.hpp"
 #include "spins.hpp"
 #include "two_lines_pc.hpp"
@@ -72,6 +74,24 @@ namespace finder {
 
     template<class C, class R>
     class Recorder;
+
+	class RunnerStatus {
+	public:
+		void resume() {
+			aborted_ = false;
+		}
+
+		void abort() {
+			aborted_ = true;
+		}
+
+		bool aborted() {
+			return aborted_;
+		}
+
+	private:
+		std::atomic<bool> aborted_ = false;
+	};
 
     // Main finder implementation
     template<class M = core::srs::MoveGenerator, class C = TSpinCandidate, class R = TSpinRecord>
@@ -362,6 +382,13 @@ namespace finder {
 
                 int numCleared = freeze.clearLineReturnNum();
 
+				auto operation = Operation{
+					pieceType,
+					move.rotateType,
+					move.x,
+					move.y
+				};
+
                 int tSpinAttack = getAttackIfTSpin(
                         moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
                 );
@@ -383,7 +410,7 @@ namespace finder {
                 }
 
                 int score = calcScore(freeze, move.harddrop);
-                auto operation = PreOperation<TSpinCandidate>{
+                auto preoperation = PreOperation<TSpinCandidate>{
                         freeze,
                         {
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
@@ -398,7 +425,7 @@ namespace finder {
                         numCleared,
                         score,
                 };
-                output.push_back(operation);
+                output.push_back(preoperation);
             }
         }
 
@@ -545,6 +572,13 @@ namespace finder {
 
                 int numCleared = freeze.clearLineReturnNum();
 
+				auto operation = Operation{
+					pieceType,
+					move.rotateType,
+					move.x,
+					move.y
+				};
+
                 int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                 int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
                 int nextFrames = candidate.frames + getFrames(operation);
@@ -558,7 +592,7 @@ namespace finder {
                 }
 
                 int score = calcScore(freeze, move.harddrop);
-                auto operation = PreOperation<FastCandidate>{
+                auto preoperation = PreOperation<FastCandidate>{
                         freeze,
                         {
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
@@ -572,7 +606,7 @@ namespace finder {
                         numCleared,
                         score,
                 };
-                output.push_back(operation);
+                output.push_back(preoperation);
             }
         }
 
@@ -759,6 +793,13 @@ namespace finder {
 
                 int numCleared = freeze.clearLineReturnNum();
 
+				auto operation = Operation{
+					pieceType,
+					move.rotateType,
+					move.x,
+					move.y
+				};
+
                 int spinAttack = getAttack(
                         moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
                 );
@@ -786,7 +827,7 @@ namespace finder {
                 }
 
                 int score = calcScore(freeze, move.harddrop);
-                auto operation = PreOperation<AllSpinsCandidate>{
+                auto preoperation = PreOperation<AllSpinsCandidate>{
                         freeze,
                         {
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
@@ -801,7 +842,7 @@ namespace finder {
                         numCleared,
                         score,
                 };
-                output.push_back(operation);
+                output.push_back(preoperation);
             }
         }
 

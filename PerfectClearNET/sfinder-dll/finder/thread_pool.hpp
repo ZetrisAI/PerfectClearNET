@@ -1,12 +1,14 @@
 #ifndef FINDER_THREAD_POOLS_HPP
 #define FINDER_THREAD_POOLS_HPP
 
+#include <vector>
 #include <thread>
-#include <condition_variable>
-#include <mutex>
 #include <queue>
 #include <future>
 #include <atomic>
+#include <stdexcept>
+
+#include <boost/thread.hpp>
 
 namespace finder {
     class TaskStatus {
@@ -53,9 +55,9 @@ namespace finder {
     public:
         void push(const Runnable &runnable) {
             {
-                std::lock(mutexForQueue_, mutexForAbort_);
-                std::lock_guard<std::mutex> lk1(mutexForQueue_, std::adopt_lock);
-                std::lock_guard<std::mutex> lk2(mutexForAbort_, std::adopt_lock);
+                boost::lock(mutexForQueue_, mutexForAbort_);
+				boost::lock_guard<boost::mutex> lk1(mutexForQueue_, boost::adopt_lock);
+				boost::lock_guard<boost::mutex> lk2(mutexForAbort_, boost::adopt_lock);
 
                 if (status_.notWorking()) {
                     throw std::runtime_error("Not working");
@@ -74,7 +76,7 @@ namespace finder {
                 Runnable runnable;
 
                 {
-                    std::unique_lock<std::mutex> guard(mutexForQueue_);
+					boost::unique_lock<boost::mutex> guard(mutexForQueue_);
                     conditionForQueue_.wait(guard, [this] { return status_.notWorking() || !queue_.empty(); });
 
                     if (queue_.empty()) {
@@ -104,7 +106,7 @@ namespace finder {
                 runnable(status_);
 
                 {
-                    std::lock_guard<std::mutex> guard(mutexForAbort_);
+                    boost::lock_guard<boost::mutex> guard(mutexForAbort_);
                     counter -= 1;
                 }
             }
@@ -112,7 +114,7 @@ namespace finder {
 
         void abort() {
             {
-                std::lock_guard<std::mutex> guard(mutexForQueue_);
+                boost::lock_guard<boost::mutex> guard(mutexForQueue_);
                 status_.abort();
             }
 
@@ -121,14 +123,14 @@ namespace finder {
 
             // sleep until completed all tasks
             {
-                std::unique_lock<std::mutex> guard(mutexForAbort_);
+                boost::unique_lock<boost::mutex> guard(mutexForAbort_);
                 conditionForAbort_.wait(guard, [this] {
                     return counter == 0;
                 });
             }
 
             {
-                std::lock_guard<std::mutex> guard(mutexForQueue_);
+                boost::lock_guard<boost::mutex> guard(mutexForQueue_);
                 status_.resume();
             }
 
@@ -138,7 +140,7 @@ namespace finder {
 
         void shutdown() {
             {
-                std::lock_guard<std::mutex> guard(mutexForQueue_);
+                boost::lock_guard<boost::mutex> guard(mutexForQueue_);
                 status_.abort();
             }
 
@@ -147,14 +149,14 @@ namespace finder {
 
             // sleep until completed all tasks
             {
-                std::unique_lock<std::mutex> guard(mutexForAbort_);
+                boost::unique_lock<boost::mutex> guard(mutexForAbort_);
                 conditionForAbort_.wait(guard, [this] {
                     return counter == 0;
                 });
             }
 
             {
-                std::lock_guard<std::mutex> guard(mutexForQueue_);
+                boost::lock_guard<boost::mutex> guard(mutexForQueue_);
                 status_.terminate();
             }
 
@@ -165,7 +167,7 @@ namespace finder {
 
         void shutdownNow() {
             {
-                std::lock_guard<std::mutex> guard(mutexForQueue_);
+                boost::lock_guard<boost::mutex> guard(mutexForQueue_);
                 status_.terminate();
 
                 counter -= queue_.size();
@@ -184,17 +186,17 @@ namespace finder {
         }
 
     private:
-        std::mutex mutexForQueue_;
-        std::mutex mutexForAbort_;
+		boost::mutex mutexForQueue_;
+		boost::mutex mutexForAbort_;
 
         TaskStatus status_{};
 
         int counter = 0;
         std::queue<Runnable> queue_{};
 
-        std::condition_variable conditionForQueue_{};
-        std::condition_variable conditionForSleep_{};
-        std::condition_variable conditionForAbort_{};
+		boost::condition_variable conditionForQueue_{};
+		boost::condition_variable conditionForSleep_{};
+		boost::condition_variable conditionForAbort_{};
     };
 
     /**

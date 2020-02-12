@@ -20,15 +20,15 @@ namespace finder {
         // If `alwaysRegularAttack` is true, mini spin is judged as regular attack
         Solution run(
                 const core::Field &field, const std::vector<core::PieceType> &pieces,
-                int maxDepth, int maxLine, bool holdEmpty, bool leastLineClears, int initCombo, bool initB2b,
-                SearchTypes searchTypes, bool alwaysRegularAttack, uint8_t lastHoldPriority, int fastSearchStartDepth
+                int maxDepth, int maxLine, bool holdEmpty, bool holdAllowed, bool leastLineClears, 
+                SearchTypes searchTypes, int initCombo, bool initB2b, bool alwaysRegularAttack, uint8_t lastHoldPriority, int fastSearchStartDepth
         ) {
             if (maxDepth == 1) {
                 auto moveGenerator = M(factory_);
                 auto finder = PerfectClearFinder<M>(factory_, moveGenerator);
                 return finder.run(
-                        field, pieces, maxDepth, maxLine, holdEmpty, leastLineClears, initCombo, initB2b,
-                        searchTypes, alwaysRegularAttack, lastHoldPriority, fastSearchStartDepth
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears,
+						searchTypes, initCombo, initB2b, alwaysRegularAttack, lastHoldPriority, fastSearchStartDepth
                 );
             }
 
@@ -50,6 +50,7 @@ namespace finder {
                     maxDepth,
                     fastSearchStartDepth,
                     static_cast<int>(pieces.size()),
+					holdAllowed,
                     leastLineClears,
                     alwaysRegularAttack,
                     lastHoldPriority,
@@ -66,21 +67,21 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? Candidate{0, -1, maxLine, 0, 0, 0, 0,
-                                                 initCombo, initCombo}
+                                                 initCombo, initCombo, 0}
                                      : Candidate{1, 0, maxLine, 0, 0, 0, 0,
-                                                 initCombo, initCombo};
+                                                 initCombo, initCombo, 0};
 
                     // premove
                     auto moves = std::vector<core::Move>{};
                     auto preOperations = std::vector<PreOperation<Candidate>>{};
                     premove(
-                            alwaysRegularAttack, maxDepth, freeze, candidate,
-                            moveGenerator_, reachable_, moves, pieces, preOperations
+							originalConfigure, freeze, candidate,
+                            moveGenerator_, reachable_, moves, preOperations
                     );
 
                     // Find solution by concurrent
                     Recorder<Candidate, Record> recorder{};
-                    std::mutex mutex;
+                    boost::mutex mutex;
 
                     auto futures = std::vector<std::future<bool>>(preOperations.size());
 
@@ -108,8 +109,9 @@ namespace finder {
                                     movePool,
                                     scoredMovePool,
                                     maxDepth,
-                                    10,
+									fastSearchStartDepth,
                                     static_cast<int>(pieces.size()),
+									holdAllowed,
                                     leastLineClears,
                                     alwaysRegularAttack,
                                     lastHoldPriority,
@@ -118,12 +120,12 @@ namespace finder {
                             auto moveGenerator = M(factory_);
                             auto reachable = core::srs_rotate_end::Reachable(factory_);
                             auto finder = PCFindRunner<M, Candidate, Record>(
-                                    factory_, moveGenerator, reachable, runnerStatus_
+                                    factory_, moveGenerator, reachable
                             );
 
                             Record record;
                             {
-                                std::lock_guard<std::mutex> guard(mutex);
+                                boost::lock_guard<boost::mutex> guard(mutex);
                                 record = recorder.best();
                             }
 
@@ -153,7 +155,7 @@ namespace finder {
                             };
 
                             {
-                                std::lock_guard<std::mutex> guard(mutex);
+                                boost::lock_guard<boost::mutex> guard(mutex);
                                 if (recorder.shouldUpdate(originalConfigure, newRecord)) {
                                     recorder.update(originalConfigure, newRecord, record.solution);
                                 }
@@ -185,21 +187,21 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? Candidate{0, -1, maxLine, 0, 0, 0, 0,
-                                                 initCombo, initCombo, 0, initB2b, leftNumOfT}
+                                                 initCombo, initCombo, 0, initB2b, leftNumOfT, 0}
                                      : Candidate{1, 0, maxLine, 0, 0, 0, 0,
-                                                 initCombo, initCombo, 0, initB2b, leftNumOfT};
+                                                 initCombo, initCombo, 0, initB2b, leftNumOfT, 0};
 
                     // premove
                     auto moves = std::vector<core::Move>{};
                     auto firstCandidates = std::vector<PreOperation<Candidate>>{};
                     premove(
-                            alwaysRegularAttack, maxDepth, freeze, candidate,
-                            moveGenerator_, reachable_, moves, pieces, firstCandidates
+							originalConfigure, freeze, candidate,
+                            moveGenerator_, reachable_, moves, firstCandidates
                     );
 
                     // Find solution by concurrent
                     Recorder<Candidate, Record> recorder{};
-                    std::mutex mutex;
+                    boost::mutex mutex;
 
                     auto futures = std::vector<std::future<bool>>(firstCandidates.size());
 
@@ -229,6 +231,7 @@ namespace finder {
                                     maxDepth,
                                     fastSearchStartDepth,
                                     static_cast<int>(pieces.size()),
+									holdAllowed,
                                     leastLineClears,
                                     alwaysRegularAttack,
                                     lastHoldPriority,
@@ -236,11 +239,13 @@ namespace finder {
 
                             auto moveGenerator = M(factory_);
                             auto reachable = core::srs_rotate_end::Reachable(factory_);
-                            auto finder = PCFindRunner<M, Candidate, Record>(factory_, moveGenerator, reachable,
-                                                                             runnerStatus_);
+                            auto finder = PCFindRunner<M, Candidate, Record>(
+									factory_, moveGenerator, reachable
+							);
+
                             Record record;
                             {
-                                std::lock_guard<std::mutex> guard(mutex);
+                                boost::lock_guard<boost::mutex> guard(mutex);
                                 record = recorder.best();
                             }
 
@@ -272,7 +277,7 @@ namespace finder {
                             };
 
                             {
-                                std::lock_guard<std::mutex> guard(mutex);
+                                boost::lock_guard<boost::mutex> guard(mutex);
                                 if (recorder.shouldUpdate(originalConfigure, newRecord)) {
                                     recorder.update(originalConfigure, newRecord, record.solution);
                                 }
@@ -299,21 +304,21 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? Candidate{0, -1, maxLine, 0, 0, 0, 0,
-                                                 initCombo, initCombo, 0, initB2b}
+                                                 initCombo, initCombo, 0, initB2b, 0}
                                      : Candidate{1, 0, maxLine, 0, 0, 0, 0,
-                                                 initCombo, initCombo, 0, initB2b};
+                                                 initCombo, initCombo, 0, initB2b, 0};
 
                     // premove
                     auto moves = std::vector<core::Move>{};
                     auto firstCandidates = std::vector<PreOperation<Candidate>>{};
                     premove(
-                            alwaysRegularAttack, maxDepth, freeze, candidate,
-                            moveGenerator_, reachable_, moves, pieces, firstCandidates
+							originalConfigure, freeze, candidate,
+                            moveGenerator_, reachable_, moves, firstCandidates
                     );
 
                     // Find solution by concurrent
                     Recorder<Candidate, Record> recorder{};
-                    std::mutex mutex;
+                    boost::mutex mutex;
 
                     auto futures = std::vector<std::future<bool>>(firstCandidates.size());
 
@@ -343,6 +348,7 @@ namespace finder {
                                     maxDepth,
                                     fastSearchStartDepth,
                                     static_cast<int>(pieces.size()),
+									holdAllowed,
                                     leastLineClears,
                                     alwaysRegularAttack,
                                     lastHoldPriority,
@@ -351,12 +357,12 @@ namespace finder {
                             auto moveGenerator = M(factory_);
                             auto reachable = core::srs_rotate_end::Reachable(factory_);
                             auto finder = PCFindRunner<M, Candidate, Record>(
-                                    factory_, moveGenerator, reachable, runnerStatus_
+                                    factory_, moveGenerator, reachable
                             );
 
                             Record record;
                             {
-                                std::lock_guard<std::mutex> guard(mutex);
+                                boost::lock_guard<boost::mutex> guard(mutex);
                                 record = recorder.best();
                             }
 
@@ -387,7 +393,7 @@ namespace finder {
                             };
 
                             {
-                                std::lock_guard<std::mutex> guard(mutex);
+                                boost::lock_guard<boost::mutex> guard(mutex);
                                 if (recorder.shouldUpdate(originalConfigure, newRecord)) {
                                     recorder.update(originalConfigure, newRecord, record.solution);
                                 }
@@ -417,7 +423,7 @@ namespace finder {
         // searchType refers to code
         Solution run(
                 const core::Field &field, const std::vector<core::PieceType> &pieces,
-                int maxLine, bool holdEmpty, int searchType, bool leastLineClears,
+                int maxLine, bool holdEmpty, bool holdAllowed, bool leastLineClears, int searchType,
                 int initCombo, bool initB2b, bool twoLineFollowUp, int numApplyFastSearch
         ) {
             int numOfSpace = core::FIELD_WIDTH * maxLine - field.getNumOfBlocks();
@@ -451,56 +457,57 @@ namespace finder {
 
             // Decide parameters
             switch (searchType) {
-                case 0: {
-                    // No softdrop is top priority
-                    return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, true, initCombo, initB2b,
-                            SearchTypes::Fast, false, lastHoldPriority, fastSearchStartDepth
-                    );
-                }
-                case 1: {
-                    // T-Spin is top priority (mini is zero attack)
-                    return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, true, initCombo, initB2b,
-                            SearchTypes::TSpin, false, lastHoldPriority, fastSearchStartDepth
-                    );
-                }
-                case 2: {
-                    // All-Spins is top priority (all spins are judged as regular attack)
-                    return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, true, initCombo, initB2b,
-                            SearchTypes::AllSpins, true, lastHoldPriority, fastSearchStartDepth
-                    );
-                }
-                case 3: {
-                    // All-Spins is top priority (mini is zero attack)
-                    return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, true, initCombo, initB2b,
-                            SearchTypes::AllSpins, false, lastHoldPriority, fastSearchStartDepth
-                    );
-                }
+				case 0: {
+					// No softdrop is top priority
+					return run(
+						field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::Fast, initCombo, initB2b,
+						false, lastHoldPriority, fastSearchStartDepth
+					);
+				}
+				case 1: {
+					// T-Spin is top priority (mini is zero attack)
+					return run(
+						field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TSpin, initCombo, initB2b,
+						false, lastHoldPriority, fastSearchStartDepth
+					);
+				}
+				case 2: {
+					// All-Spins is top priority (all spins are judged as regular attack)
+					return run(
+						field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::AllSpins, initCombo, initB2b,
+						true, lastHoldPriority, fastSearchStartDepth
+					);
+				}
+				case 3: {
+					// All-Spins is top priority (mini is zero attack)
+					return run(
+						field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::AllSpins, initCombo, initB2b,
+						false, lastHoldPriority, fastSearchStartDepth
+					);
+				}
                 default: {
                     throw std::runtime_error("Illegal search type: value=" + std::to_string(searchType));
                 }
             }
         }
 
-        Solution run(
+		Solution run(
                 const core::Field &field, const std::vector<core::PieceType> &pieces,
-                int maxLine, bool holdEmpty, int searchType, bool leastLineClears,
+                int maxLine, bool holdEmpty, bool holdAllowed, int searchType, bool leastLineClears,
                 int initCombo, bool initB2b, bool twoLineFollowUp
         ) {
             return run(
-                    field, pieces, maxLine, holdEmpty, searchType, leastLineClears,
+                    field, pieces, maxLine, holdEmpty, holdAllowed, leastLineClears, searchType,
                     initCombo, initB2b, twoLineFollowUp, INT_MAX
             );
         }
 
         Solution run(
-                const core::Field &field, const std::vector<core::PieceType> &pieces, int maxLine, bool holdEmpty
+                const core::Field &field, const std::vector<core::PieceType> &pieces,
+				int maxLine, bool holdEmpty, bool holdAllowed
         ) {
             return run(
-                    field, pieces, maxLine, holdEmpty, SearchTypes::TSpin, true, 0, true, false
+                    field, pieces, maxLine, holdEmpty, holdAllowed, SearchTypes::TSpin, true, 0, true, false
             );
         }
 
@@ -512,19 +519,17 @@ namespace finder {
     private:
         template<class C>
         void premove(
-                bool alwaysRegularAttack,
-                int maxDepth,
+                const Configure &configure,
                 const core::Field &field,
                 const C &candidate,
                 M &moveGenerator,
                 core::srs_rotate_end::Reachable &reachable,
                 std::vector<core::Move> &moves,
-                const std::vector<core::PieceType> &pieces,
                 std::vector<PreOperation<C>> &output
         ) const {
             auto mover = Mover<M, C>(factory_, moveGenerator, reachable);
 
-            int pieceSize = pieces.size();
+            int pieceSize = configure.pieces.size();
 
             auto currentIndex = candidate.currentIndex;
             assert(0 <= currentIndex && currentIndex <= pieceSize);
@@ -535,47 +540,50 @@ namespace finder {
 
             bool canUseCurrent = currentIndex < pieceSize;
             if (canUseCurrent) {
-                assert(currentIndex < pieces.size());
-                auto &current = pieces[currentIndex];
+                assert(currentIndex < configure.pieces.size());
+                auto &current = configure.pieces[currentIndex];
 
                 moves.clear();
                 mover.premove(
-                        alwaysRegularAttack, maxDepth, field, candidate,
+						configure.alwaysRegularAttack, configure.maxDepth, field, candidate,
                         moves, current, currentIndex + 1, holdIndex, holdCount, output
                 );
             }
 
-            if (0 <= holdIndex) {
-                assert(holdIndex < pieces.size());
+			if (configure.holdAllowed) {
+				if (0 <= holdIndex) {
+					assert(holdIndex < configure.pieces.size());
 
-                // Hold exists
-                if (!canUseCurrent || pieces[currentIndex] != pieces[holdIndex]) {
-                    auto &hold = pieces[holdIndex];
+					// Hold exists
+					if (!canUseCurrent || configure.pieces[currentIndex] != configure.pieces[holdIndex]) {
+						auto& hold = configure.pieces[holdIndex];
 
-                    moves.clear();
-                    mover.premove(
-                            alwaysRegularAttack, maxDepth, field, candidate,
-                            moves, hold, currentIndex + 1, currentIndex, holdCount + 1, output
-                    );
-                }
-            } else {
-                assert(canUseCurrent);
+						moves.clear();
+						mover.premove(
+							configure.alwaysRegularAttack, configure.maxDepth, field, candidate,
+							moves, hold, currentIndex + 1, currentIndex, holdCount + 1, output
+						);
+					}
+				}
+				else {
+					assert(canUseCurrent);
 
-                // Empty hold
-                int nextIndex = currentIndex + 1;
-                assert(nextIndex < pieces.size() + 1);
+					// Empty hold
+					int nextIndex = currentIndex + 1;
+					assert(nextIndex < configure.pieces.size() + 1);
 
-                if (nextIndex < pieceSize && pieces[currentIndex] != pieces[nextIndex]) {
-                    assert(nextIndex < pieces.size());
-                    auto &next = pieces[nextIndex];
+					if (nextIndex < pieceSize && configure.pieces[currentIndex] != configure.pieces[nextIndex]) {
+						assert(nextIndex < configure.pieces.size());
+						auto& next = configure.pieces[nextIndex];
 
-                    moves.clear();
-                    mover.premove(
-                            alwaysRegularAttack, maxDepth, field, candidate,
-                            moves, next, nextIndex + 1, currentIndex, holdCount + 1, output
-                    );
-                }
-            }
+						moves.clear();
+						mover.premove(
+							configure.alwaysRegularAttack, configure.maxDepth, field, candidate,
+							moves, next, nextIndex + 1, currentIndex, holdCount + 1, output
+						);
+					}
+				}
+			}
 
             std::sort(output.begin(), output.end(), [](const PreOperation<C> &left, const PreOperation<C> &right) {
                 return left.score < right.score;
