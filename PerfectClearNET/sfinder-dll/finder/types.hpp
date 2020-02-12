@@ -8,7 +8,9 @@ namespace finder {
     struct Configure {
         const std::vector<core::PieceType> &pieces;
         std::vector<std::vector<core::Move>> &movePool;
+        std::vector<std::vector<core::ScoredMove>> &scoredMovePool;
         const int maxDepth;
+        const int fastSearchStartDepth;
         const int pieceSize;
 		const bool holdAllowed;
         const bool leastLineClears;
@@ -23,91 +25,128 @@ namespace finder {
         int y;
     };
 
+    template<typename C>
+    struct PreOperation {
+        core::Field field;
+        C candidate;
+        core::PieceType pieceType;
+        core::RotateType rotateType;
+        int x;
+        int y;
+        bool harddrop;
+        int numCleared;
+        int score;
+    };
+
     using Solution = std::vector<Operation>;
     inline const Solution kNoSolution = std::vector<Operation>();
 
     // For fast search
     struct FastCandidate {
-        const core::Field &field;
-        const int currentIndex;
-        const int holdIndex;
-        const int leftLine;
-        const int depth;
-        const int softdropCount;
-        const int holdCount;
-        const int lineClearCount;
-        const int currentCombo;
-        const int maxCombo;
-		const int frames;
-    };
-
-    struct FastRecord {
-        Solution solution;
-        core::PieceType hold;
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
         int softdropCount;
         int holdCount;
         int lineClearCount;
+        int currentCombo;
         int maxCombo;
+		int frames;
+    };
+
+    struct FastRecord {
+        // new
+        Solution solution;
+        core::PieceType hold;
         int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+
+        // from candidate
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
+        int softdropCount;
+        int holdCount;
+        int lineClearCount;
+        int currentCombo;
+        int maxCombo;
 		int frames;
     };
 
     // For T-Spin search
     struct TSpinCandidate {
-        const core::Field &field;
-        const int currentIndex;
-        const int holdIndex;
-        const int leftLine;
-        const int depth;
-        const int softdropCount;
-        const int holdCount;
-        const int lineClearCount;
-        const int currentCombo;
-        const int maxCombo;
-        const int tSpinAttack;
-        const bool b2b;
-        const int leftNumOfT;
-		const int frames;
-    };
-
-    struct TSpinRecord {
-        Solution solution;
-        core::PieceType hold;
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
         int softdropCount;
         int holdCount;
         int lineClearCount;
+        int currentCombo;
         int maxCombo;
         int tSpinAttack;
+        bool b2b;
+        int leftNumOfT;
+        int frames;
+    };
+
+    struct TSpinRecord {
+        // new
+        Solution solution;
+        core::PieceType hold;
         int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+
+        // from candidate
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
+        int softdropCount;
+        int holdCount;
+        int lineClearCount;
+        int currentCombo;
+        int maxCombo;
+        int tSpinAttack;
+        bool b2b;
+        int leftNumOfT;
 		int frames;
     };
 
     // For all spins search
     struct AllSpinsCandidate {
-        const core::Field &field;
-        const int currentIndex;
-        const int holdIndex;
-        const int leftLine;
-        const int depth;
-        const int softdropCount;
-        const int holdCount;
-        const int lineClearCount;
-        const int currentCombo;
-        const int maxCombo;
-        const int spinAttack;
-        const bool b2b;
-		const int frames;
-    };
-
-    struct AllSpinsRecord {
-        Solution solution;
-        core::PieceType hold;
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
         int softdropCount;
         int holdCount;
         int lineClearCount;
+        int currentCombo;
         int maxCombo;
         int spinAttack;
+        bool b2b;
+		int frames;
+    };
+
+    struct AllSpinsRecord {
+        // new
+        Solution solution;
+        core::PieceType hold;
         int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+
+        // candidate
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
+        int softdropCount;
+        int holdCount;
+        int lineClearCount;
+        int currentCombo;
+        int maxCombo;
+        int spinAttack;
+        bool b2b;
 		int frames;
     };
 }

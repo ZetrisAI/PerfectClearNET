@@ -1,8 +1,6 @@
 #include "two_lines_pc.hpp"
 
-#include <assert.h>
 #include <set>
-#include <stdexcept>
 
 namespace finder {
     namespace {
