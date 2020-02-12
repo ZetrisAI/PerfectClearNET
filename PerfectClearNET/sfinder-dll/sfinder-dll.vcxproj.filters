@@ -86,5 +86,11 @@
     <ClInclude Include="finder\frames.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="finder\concurrent_perfect_clear.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="finder\thread_pool.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

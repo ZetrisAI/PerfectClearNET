@@ -107,8 +107,10 @@
     <ClInclude Include="core\piece.hpp" />
     <ClInclude Include="core\srs.hpp" />
     <ClInclude Include="core\types.hpp" />
+    <ClInclude Include="finder\concurrent_perfect_clear.hpp" />
     <ClInclude Include="finder\perfect_clear.hpp" />
     <ClInclude Include="finder\spins.hpp" />
+    <ClInclude Include="finder\thread_pool.hpp" />
     <ClInclude Include="finder\two_lines_pc.hpp" />
     <ClInclude Include="finder\types.hpp" />
     <ClInclude Include="main.hpp" />

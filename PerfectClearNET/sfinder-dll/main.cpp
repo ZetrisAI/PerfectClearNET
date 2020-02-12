@@ -72,11 +72,9 @@ DLL void action(const char* _field, const char* _queue, const char* _hold, int h
 		height += minos_placed % 4 == (height % 2)? 0 : 2;
 
 		for (; height <= max_height; height += 2) {
-			int pieces_required = (height * 10 - minos_placed) / 4 + 1;
+			if ((height * 10 - minos_placed) / 4 + 1 > pieces.size()) break;
 
-			if (pieces_required > pieces.size()) break;
-
-			auto result = pcfinder.run(field, pieces, pieces_required, height, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, true);
+			auto result = pcfinder.run(field, pieces, height, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, true, 6);
 
 			if (!result.empty()) {
 				solved = true;

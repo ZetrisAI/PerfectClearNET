@@ -1,6 +1,8 @@
 #ifndef FINDER_PERFECT_HPP
 #define FINDER_PERFECT_HPP
 
+#include <atomic>
+
 #include "types.hpp"
 #include "spins.hpp"
 #include "two_lines_pc.hpp"
