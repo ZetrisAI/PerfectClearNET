@@ -83,7 +83,7 @@ namespace finder {
                     Recorder<Candidate, Record> recorder{};
                     boost::mutex mutex;
 
-                    auto futures = std::vector<std::future<bool>>(preOperations.size());
+                    auto futures = std::vector<boost::future<bool>>(preOperations.size());
 
                     for (int index = 0; index < futures.size(); ++index) {
                         auto preOperation = preOperations[index];

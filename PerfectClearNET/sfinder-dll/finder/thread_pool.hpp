@@ -4,10 +4,13 @@
 #include <vector>
 #include <thread>
 #include <queue>
-#include <future>
 #include <atomic>
 #include <stdexcept>
 
+#define BOOST_THREAD_PROVIDES_FUTURE
+#define BOOST_THREAD_PROVIDES_VARIADIC_THREAD
+#define BOOST_THREAD_PROVIDES_SIGNATURE_PACKAGED_TASK
+#include <boost/thread/future.hpp>
 #include <boost/thread.hpp>
 
 namespace finder {
@@ -233,13 +236,13 @@ namespace finder {
 
         // Execute the task returning result.
         template<typename R>
-        std::future<R> execute(const Callable<R> &callable) {
+        boost::future<R> execute(const Callable<R> &callable) {
             if (tasks_->terminated()) {
                 throw std::runtime_error("Thread pool is terminated");
             }
 
-            auto task = std::make_shared<std::packaged_task<R(const TaskStatus &)>>(callable);
-            tasks_->push([task](const TaskStatus &status) {
+            auto task = std::make_shared<boost::packaged_task<R(const TaskStatus &)>>(callable);
+            tasks_->push([task](const TaskStatus& status) {
                 (*task)(status);
             });
             return std::move(task->get_future());
