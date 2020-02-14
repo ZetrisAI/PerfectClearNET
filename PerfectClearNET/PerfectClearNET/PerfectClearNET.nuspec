@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>PerfectClearNET</id>
+    <version>1.4.0.2</version>
+    <title>PerfectClearNET</title>
+    <authors>mat1jaczyyy</authors>
+    <owners>mat1jaczyyy</owners>
+    <projectUrl>https://github.com/mat1jaczyyy/PerfectClearNET</projectUrl>
+    <description>A .NET wrapper for knewjade's solution-finder, a guideline Tetris Perfect Clear Finder</description>
+    <repository type="git" url="https://github.com/mat1jaczyyy/PerfectClearNET.git" />
+    <tags>tetris finder search</tags>
+  </metadata>
+  <files>
+    <file src="bin\Release\sfinder-dll.dll" target="build\" />
+    <file src="PerfectClearNET.targets" target="build\" />
+  </files>
+</package>

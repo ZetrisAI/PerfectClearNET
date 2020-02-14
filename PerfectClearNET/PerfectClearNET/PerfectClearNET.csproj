@@ -54,7 +54,7 @@
     <ProjectReference Include="..\sfinder-dll\sfinder-dll.vcxproj">
       <Project>{f71bf46c-2c69-40af-a5df-a73e25a21997}</Project>
       <Name>sfinder-dll</Name>
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </ProjectReference>
