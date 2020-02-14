@@ -98,5 +98,8 @@ DLL void action(const char* _field, const char* _queue, const char* _hold, int h
 }
 
 BOOL WINAPI DllMain(HANDLE handle, DWORD reason, LPVOID reserved) {
+	if (reason == DLL_PROCESS_DETACH)
+		threadPool.shutdown();
+
 	return TRUE;
 }
