@@ -68,6 +68,12 @@ namespace PerfectClearNET {
                 abortWait.WaitOne();
             }
         }
+        
+        /// <summary>
+        /// Changes the thread count.
+        /// </summary>
+        /// <param name="threads">Specifies the number of threads to search with.</param>
+        public static void SetThreads(uint threads) => Interface.set_threads(threads);
 
         /// <summary>
         /// <para>Starts searching for a solution/decision for the given game state.</para>
@@ -86,8 +92,11 @@ namespace PerfectClearNET {
         /// <param name="searchType">The search priority, in order: no softdrop, T-spin, All-spin with Mini, All-spin without Mini.</param>
         /// <param name="combo">The combo count.</param>
         /// <param name="b2b">Do you have back-to-back?</param>
-        /// <param name="threads">Specifies the number of threads to search with.</param>
-        public static async void Find(int[,] field, int[] queue, int current, int? hold, bool holdAllowed, int maxHeight, bool swap, int searchType, int combo, bool b2b, uint threads) {
+        public static async void Find(
+            int[,] field, int[] queue, int current, int? hold, bool holdAllowed,
+            int maxHeight, bool swap, int searchType, int combo, bool b2b
+        ) {
+
             int c = 0;
             int t = -1;
             string f = "";
@@ -116,7 +125,7 @@ namespace PerfectClearNET {
             string result = "";
 
             await Task.Run(() => {
-                result = Interface.Process(f, q, h, t, maxHeight, swap, searchType, combo, b2b, threads, out long time);
+                result = Interface.Process(f, q, h, t, maxHeight, swap, searchType, combo, b2b, out long time);
 
                 LastSolution = new List<Operation>();
                 LastTime = time;

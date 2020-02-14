@@ -6,6 +6,10 @@ DLL void set_abort(Callback handler) {
 	Abort = handler;
 }
 
+DLL void set_threads(unsigned int threads) {
+	threadPool.changeThreadCount(threads);
+}
+
 core::PieceType charToPiece(char x) {
 	switch (x) {
 		case 'S':
@@ -35,12 +39,10 @@ core::PieceType charToPiece(char x) {
 }
 
 DLL void action(
-	const char* _field, const char* _queue, const char* _hold, int height, int max_height,
-	bool swap, int searchtype, int combo, bool b2b, unsigned int threads,
+	const char* _field, const char* _queue, const char* _hold, int height,
+	int max_height, bool swap, int searchtype, int combo, bool b2b,
 	char* _str, int _len
 ) {
-
-	threadPool.changeThreadCount(threads);
 
 	bool solved = false;
 	std::stringstream out;

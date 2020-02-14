@@ -81,7 +81,8 @@ namespace Tester {
             } else {
                 Display.Text = "Started 1";
 
-                PerfectClear.Find(fieldUsed = field1, new int[] { 6, 0, 3, 0 }, 6, 4, true, 10, false, 2, 0, false, 1);
+                PerfectClear.SetThreads(1);
+                PerfectClear.Find(fieldUsed = field1, new int[] { 6, 0, 3, 0 }, 6, 4, true, 10, false, 2, 0, false);
             }
         }
 
@@ -91,8 +92,9 @@ namespace Tester {
 
             } else {
                 Display.Text = "Started 2";
-
-                PerfectClear.Find(fieldUsed = field2, new int[] { 0, 6, 2, 3, 5, 4, 3, 2, 0, 6 }, 1, null, true, 8, false, 2, 0, false, 16);
+                
+                PerfectClear.SetThreads(12);
+                PerfectClear.Find(fieldUsed = field2, new int[] { 0, 6, 2, 3, 5, 4, 3, 2, 0, 6 }, 1, null, true, 8, false, 2, 0, false);
             }
         }
     }

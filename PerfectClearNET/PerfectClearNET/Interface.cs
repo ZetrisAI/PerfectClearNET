@@ -16,9 +16,12 @@ namespace PerfectClearNET {
         public static bool Running { get; private set; } = false;
 
         [DllImport("sfinder-dll.dll")]
+        public static extern void set_threads(uint threads);
+
+        [DllImport("sfinder-dll.dll")]
         private static extern void action(
-            string field, string queue, string hold, int height, int max_height,
-            bool swap, int searchtype, int combo, bool b2b, uint threads,
+            string field, string queue, string hold, int height,
+            int max_height, bool swap, int searchtype, int combo, bool b2b,
             StringBuilder str, int len
         );
 
@@ -33,8 +36,8 @@ namespace PerfectClearNET {
         }
 
         public static string Process(
-            string field, string queue, string hold, int height, int max_height,
-            bool swap, int search_type, int combo, bool b2b, uint threads,
+            string field, string queue, string hold, int height,
+            int max_height, bool swap, int search_type, int combo, bool b2b,
             out long time
         ) {
 
@@ -51,8 +54,8 @@ namespace PerfectClearNET {
                 Running = true;
 
                 action(
-                    field, queue, hold, height, max_height,
-                    swap, search_type, combo, b2b, threads,
+                    field, queue, hold, height,
+                    max_height, swap, search_type, combo, b2b,
                     sb, sb.Capacity
                 );
 
