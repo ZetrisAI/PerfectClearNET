@@ -13,7 +13,7 @@
 #include "finder/concurrent_perfect_clear.hpp"
 
 auto factory = core::Factory::create();
-auto threadPool = finder::ThreadPool(6);
+auto threadPool = finder::ThreadPool(1);
 auto pcfinder = finder::ConcurrentPerfectClearFinder<core::srs::MoveGenerator>(factory, threadPool);
 
 static const unsigned char BitsSetTable256[256] = 

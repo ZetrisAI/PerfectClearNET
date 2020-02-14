@@ -16,7 +16,11 @@ namespace PerfectClearNET {
         public static bool Running { get; private set; } = false;
 
         [DllImport("sfinder-dll.dll")]
-        private static extern void action(string field, string queue, string hold, int height, int max_height, bool swap, int searchtype, int combo, bool b2b, StringBuilder str, int len);
+        private static extern void action(
+            string field, string queue, string hold, int height, int max_height,
+            bool swap, int searchtype, int combo, bool b2b, uint threads,
+            StringBuilder str, int len
+        );
 
         static Interface() {
             AbortCallback = new Callback(Abort);
@@ -28,7 +32,12 @@ namespace PerfectClearNET {
             if (Running) abort = true;
         }
 
-        public static string Process(string field, string queue, string hold, int height, int max_height, bool swap, int search_type, int combo, bool b2b, out long time) {
+        public static string Process(
+            string field, string queue, string hold, int height, int max_height,
+            bool swap, int search_type, int combo, bool b2b, uint threads,
+            out long time
+        ) {
+
             StringBuilder sb = new StringBuilder(500);
 
             abort = true;
@@ -41,7 +50,11 @@ namespace PerfectClearNET {
 
                 Running = true;
 
-                action(field, queue, hold, height, max_height, swap, search_type, combo, b2b, sb, sb.Capacity);
+                action(
+                    field, queue, hold, height, max_height,
+                    swap, search_type, combo, b2b, threads,
+                    sb, sb.Capacity
+                );
 
                 Running = false;
 

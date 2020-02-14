@@ -34,7 +34,14 @@ core::PieceType charToPiece(char x) {
 	}
 }
 
-DLL void action(const char* _field, const char* _queue, const char* _hold, int height, int max_height, bool swap, int searchtype, int combo, bool b2b, char* _str, int _len) {
+DLL void action(
+	const char* _field, const char* _queue, const char* _hold, int height, int max_height,
+	bool swap, int searchtype, int combo, bool b2b, unsigned int threads,
+	char* _str, int _len
+) {
+
+	threadPool.changeThreadCount(threads);
+
 	bool solved = false;
 	std::stringstream out;
 
