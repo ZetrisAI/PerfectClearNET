@@ -52,14 +52,14 @@ DLL void action(
 	int minos_placed = 0;
 
 	for (core::Bitboard v : field.boards)
-		minos_placed = BitsSetTable256[v & 0xff] +
-		BitsSetTable256[(v >> 8) & 0xff] +
-		BitsSetTable256[(v >> 16) & 0xff] +
-		BitsSetTable256[(v >> 24) & 0xff] +
-		BitsSetTable256[(v >> 32) & 0xff] +
-		BitsSetTable256[(v >> 40) & 0xff] +
-		BitsSetTable256[(v >> 48) & 0xff] +
-		BitsSetTable256[v >> 56];
+		minos_placed += BitsSetTable256[v & 0xff] +
+			BitsSetTable256[(v >> 8) & 0xff] +
+			BitsSetTable256[(v >> 16) & 0xff] +
+			BitsSetTable256[(v >> 24) & 0xff] +
+			BitsSetTable256[(v >> 32) & 0xff] +
+			BitsSetTable256[(v >> 40) & 0xff] +
+			BitsSetTable256[(v >> 48) & 0xff] +
+			BitsSetTable256[v >> 56];
 
 	if (minos_placed % 2 == 0) {
 		if (max_height < 0) max_height = 0;
