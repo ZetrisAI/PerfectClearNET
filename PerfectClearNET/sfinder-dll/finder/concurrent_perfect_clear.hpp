@@ -152,6 +152,7 @@ namespace finder {
                                     record.depth, record.softdropCount,
                                     record.holdCount, record.lineClearCount,
                                     record.currentCombo, record.maxCombo,
+                                    record.frames
                             };
 
                             {
@@ -273,7 +274,7 @@ namespace finder {
                                     record.holdCount, record.lineClearCount,
                                     record.currentCombo, record.maxCombo,
                                     record.tSpinAttack, record.b2b,
-                                    record.leftNumOfT,
+                                    record.leftNumOfT, record.frames
                             };
 
                             {
@@ -390,6 +391,7 @@ namespace finder {
                                     record.holdCount, record.lineClearCount,
                                     record.currentCombo, record.maxCombo,
                                     record.spinAttack, record.b2b,
+                                    record.frames
                             };
 
                             {

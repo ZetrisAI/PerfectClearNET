@@ -477,6 +477,8 @@ namespace finder {
 
                     int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                     int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                    int nextCurrentCombo = 0 < numCleared ? candidate.currentCombo + 1 : 0;
+                    int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
 				    int nextFrames = candidate.frames + getFrames(operation);
 
                     auto nextDepth = candidate.depth + 1;
@@ -485,7 +487,8 @@ namespace finder {
                     if (nextLeftLine == 0) {
                         auto bestCandidate = FastCandidate{
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                                nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
+                                nextSoftdropCount, nextHoldCount, nextLineClearCount,
+                                nextCurrentCombo, nextMaxCombo, nextFrames
                         };
                         finder->accept(configure, bestCandidate, solution);
                         return;
@@ -501,7 +504,8 @@ namespace finder {
 
                     auto nextCandidate = FastCandidate{
                             nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                            nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
+                            nextSoftdropCount, nextHoldCount, nextLineClearCount,
+                            nextCurrentCombo, nextMaxCombo, nextFrames
                     };
                     finder->search(configure, freeze, nextCandidate, solution);
                 }
@@ -517,6 +521,8 @@ namespace finder {
 
                     int nextSoftdropCount = s.move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                     int nextLineClearCount = 0 < s.numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                    int nextCurrentCombo = 0 < s.numCleared ? candidate.currentCombo + 1 : 0;
+                    int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
                     int nextFrames = candidate.frames + getFrames(operation);
 
                     auto nextDepth = candidate.depth + 1;
@@ -525,7 +531,8 @@ namespace finder {
                     if (nextLeftLine == 0) {
                         auto bestCandidate = FastCandidate{
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                                nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
+                                nextSoftdropCount, nextHoldCount, nextLineClearCount,
+                                nextCurrentCombo, nextMaxCombo, nextFrames
                         };
                         finder->accept(configure, bestCandidate, solution);
                         return;
@@ -541,7 +548,8 @@ namespace finder {
 
                     auto nextCandidate = FastCandidate{
                             nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                            nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
+                            nextSoftdropCount, nextHoldCount, nextLineClearCount,
+                                nextCurrentCombo, nextMaxCombo, nextFrames
                     };
                     finder->search(configure, s.field, nextCandidate, solution);
                 }
@@ -581,6 +589,8 @@ namespace finder {
 
                 int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                 int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                int nextCurrentCombo = 0 < numCleared ? candidate.currentCombo + 1 : 0;
+                int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
                 int nextFrames = candidate.frames + getFrames(operation);
 
                 auto nextDepth = candidate.depth + 1;
@@ -596,7 +606,8 @@ namespace finder {
                         freeze,
                         {
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
-                                nextSoftdropCount, nextHoldCount, nextLineClearCount, nextFrames
+                                nextSoftdropCount, nextHoldCount, nextLineClearCount,
+                                nextCurrentCombo, nextMaxCombo, nextFrames
                         },
                         pieceType,
                         move.rotateType,

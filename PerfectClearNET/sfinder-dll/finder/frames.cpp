@@ -16,8 +16,8 @@ namespace finder {
 			if (operation.rotateType == 1 || operation.rotateType == 2) x--;
 		}
 
-		r = 2 - ((r + 2) % 4);
-		int m = 4 - x;
+		r = abs(2 - ((r + 2) % 4));
+		int m = abs(4 - x);
 
 		// note: we count the frame we hard drop on
 		if (m == 0 && r == 0) {
