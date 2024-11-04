@@ -384,4 +384,123 @@ namespace finder {
             return shouldUpdateMostLineClear(best_, newRecord);
         }
     }
+    
+    // For TETR.IO Season 2 search
+    void Recorder<TETRIOS2Candidate, TETRIOS2Record>::clear() {
+        best_ = TETRIOS2Record{
+                std::vector<Operation>{},
+                core::PieceType::Empty,
+                INT_MAX,
+                INT_MAX,
+                INT_MAX,
+                0,
+                INT_MAX,
+                INT_MAX,
+                INT_MAX,
+                INT_MAX,
+                0,
+                0,
+                0,
+                false,
+                0,
+        };
+    }
+
+    void Recorder<TETRIOS2Candidate, TETRIOS2Record>::update(
+            const Configure &configure, const TETRIOS2Candidate &current, const Solution &solution
+    ) {
+        auto hold = 0 <= current.holdIndex ? configure.pieces[current.holdIndex] : core::PieceType::Empty;
+        best_ = TETRIOS2Record{
+                // new
+                solution, hold, extractLastHoldPriority(configure.lastHoldPriority, hold),
+                // from candidate
+                current.currentIndex, current.holdIndex, current.leftLine, current.depth,
+                current.softdropCount, current.holdCount, current.lineClearCount,
+                current.currentCombo, current.maxCombo, current.spinAttack, current.b2b, current.frames
+        };
+    }
+
+    void Recorder<TETRIOS2Candidate, TETRIOS2Record>::update(const TETRIOS2Record &record) {
+        best_ = TETRIOS2Record{record};
+    }
+
+    bool Recorder<TETRIOS2Candidate, TETRIOS2Record>::isWorseThanBest(
+            bool leastLineClears, const TETRIOS2Candidate &current
+    ) const {
+        // There is a high possibility of spin attack until the last piece. so, it's difficult to prune along the way
+        return false;
+    }
+
+	bool shouldUpdateFrames(
+		const TETRIOS2Record& oldRecord, const TETRIOS2Candidate& newRecord
+	) {
+		int newFrames = newRecord.holdCount + newRecord.frames;
+		int oldFrames = oldRecord.holdCount + oldRecord.frames;
+
+		return newFrames == oldFrames
+			? newRecord.holdCount < oldRecord.holdCount
+			: newFrames < oldFrames;
+	}
+
+    bool shouldUpdateLeastLineClear(
+            const TETRIOS2Record &oldRecord, const TETRIOS2Candidate &newRecord
+    ) {
+        if (newRecord.spinAttack != oldRecord.spinAttack) {
+            return oldRecord.spinAttack < newRecord.spinAttack;
+        }
+
+        if (newRecord.softdropCount != oldRecord.softdropCount) {
+            return newRecord.softdropCount < oldRecord.softdropCount;
+        }
+
+        if (newRecord.lineClearCount != oldRecord.lineClearCount) {
+            return newRecord.lineClearCount < oldRecord.lineClearCount;
+        }
+
+        return shouldUpdateFrames(oldRecord, newRecord);
+    }
+
+    bool shouldUpdateMostLineClear(
+            const TETRIOS2Record &oldRecord, const TETRIOS2Candidate &newRecord
+    ) {
+        if (newRecord.spinAttack != oldRecord.spinAttack) {
+            return oldRecord.spinAttack < newRecord.spinAttack;
+        }
+
+        if (newRecord.softdropCount != oldRecord.softdropCount) {
+            return newRecord.softdropCount < oldRecord.softdropCount;
+        }
+
+        if (newRecord.maxCombo != oldRecord.maxCombo) {
+            return oldRecord.maxCombo < newRecord.maxCombo;
+        }
+
+        if (newRecord.lineClearCount != oldRecord.lineClearCount) {
+            return oldRecord.lineClearCount < newRecord.lineClearCount;
+        }
+
+        return shouldUpdateFrames(oldRecord, newRecord);
+    }
+
+    bool Recorder<TETRIOS2Candidate, TETRIOS2Record>::shouldUpdate(
+            const Configure &configure, const TETRIOS2Candidate &newRecord
+    ) const {
+        if (best_.solution.empty()) {
+            return true;
+        }
+
+        core::PieceType newHold = 0 <= newRecord.holdIndex
+                                  ? configure.pieces[newRecord.holdIndex]
+                                  : core::PieceType::Empty;
+        auto compare = compareToLastHoldPriority(configure.lastHoldPriority, best_.holdPriority, newHold);
+        if (compare != 0) {
+            return 0 < compare;
+        }
+
+        if (configure.leastLineClears) {
+            return shouldUpdateLeastLineClear(best_, newRecord);
+        } else {
+            return shouldUpdateMostLineClear(best_, newRecord);
+        }
+    }
 }

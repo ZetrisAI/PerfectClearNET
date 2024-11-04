@@ -149,6 +149,43 @@ namespace finder {
         bool b2b;
 		int frames;
     };
+
+    // For all spins search
+    struct TETRIOS2Candidate {
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
+        int softdropCount;
+        int holdCount;
+        int lineClearCount;
+        int currentCombo;
+        int maxCombo;
+        int spinAttack;
+        bool b2b;
+        int frames;
+    };
+
+    struct TETRIOS2Record {
+        // new
+        Solution solution;
+        core::PieceType hold;
+        int holdPriority;  // Priority is given when the least significant bit is 1  // 0bEOZSJLIT
+
+        // candidate
+        int currentIndex;
+        int holdIndex;
+        int leftLine;
+        int depth;
+        int softdropCount;
+        int holdCount;
+        int lineClearCount;
+        int currentCombo;
+        int maxCombo;
+        int spinAttack;
+        bool b2b;
+        int frames;
+    };
 }
 
 #endif //FINDER_TYPES_HPP

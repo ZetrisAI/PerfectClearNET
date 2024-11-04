@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enums.cs" />
     <Compile Include="Interface.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Operation.cs" />

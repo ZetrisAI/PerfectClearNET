@@ -415,6 +415,123 @@ namespace finder {
                     auto best = recorder.best();
                     return best.solution.empty() ? kNoSolution : std::vector<Operation>(best.solution);
                 }
+                case SearchTypes::TETRIOS2: {
+                    using Candidate = TETRIOS2Candidate;
+                    using Record = TETRIOS2Record;
+
+                    // Create candidate
+                    auto candidate = holdEmpty
+                                     ? Candidate{0, -1, maxLine, 0, 0, 0, 0,
+                                                 initCombo, initCombo, 0, initB2b, 0}
+                                     : Candidate{1, 0, maxLine, 0, 0, 0, 0,
+                                                 initCombo, initCombo, 0, initB2b, 0};
+
+                    // premove
+                    auto moves = std::vector<core::Move>{};
+                    auto firstCandidates = std::vector<PreOperation<Candidate>>{};
+                    premove(
+							originalConfigure, freeze, candidate,
+                            moveGenerator_, reachable_, moves, firstCandidates
+                    );
+
+                    // Find solution by concurrent
+                    Recorder<Candidate, Record> recorder{};
+                    boost::mutex mutex;
+
+                    auto futures = std::vector<boost::future<bool>>(firstCandidates.size());
+
+                    for (int index = 0; index < futures.size(); ++index) {
+                        auto preOperation = firstCandidates[index];
+                        Callable<bool> callable = [&, preOperation](const TaskStatus &taskStatus) {
+                            if (taskStatus.notWorking()) {
+                                return false;
+                            }
+
+                            // Initialize moves
+                            auto movePool = std::vector<std::vector<core::Move>>{};
+                            for (int index = 0; index < maxDepth; ++index) {
+                                movePool.emplace_back();
+                            }
+
+                            auto scoredMovePool = std::vector<std::vector<core::ScoredMove>>{};
+                            for (int index = 0; index < maxDepth; ++index) {
+                                scoredMovePool.emplace_back();
+                            }
+
+                            // Initialize configure
+                            const auto configure = Configure{
+                                    pieces,
+                                    movePool,
+                                    scoredMovePool,
+                                    maxDepth,
+                                    fastSearchStartDepth,
+                                    static_cast<int>(pieces.size()),
+									holdAllowed,
+                                    leastLineClears,
+                                    alwaysRegularAttack,
+                                    lastHoldPriority,
+                            };
+
+                            auto moveGenerator = M(factory_);
+                            auto reachable = core::srs_rotate_end::Reachable(factory_);
+                            auto finder = PCFindRunner<M, Candidate, Record>(
+                                    factory_, moveGenerator, reachable
+                            );
+
+                            Record record;
+                            {
+                                boost::lock_guard<boost::mutex> guard(mutex);
+                                record = recorder.best();
+                            }
+
+                            if (record.solution.empty()) {
+                                record = finder.runRecord(configure, preOperation.field, preOperation.candidate);
+                            } else {
+                                record = finder.runRecord(
+                                        configure, preOperation.field, preOperation.candidate, record
+                                );
+                            }
+
+                            if (record.solution.empty()) {
+                                return false;
+                            }
+
+                            record.solution[0].pieceType = preOperation.pieceType;
+                            record.solution[0].rotateType = preOperation.rotateType;
+                            record.solution[0].x = preOperation.x;
+                            record.solution[0].y = preOperation.y;
+
+                            auto newRecord = Candidate{
+                                    record.currentIndex,
+                                    record.holdIndex, record.leftLine,
+                                    record.depth, record.softdropCount,
+                                    record.holdCount, record.lineClearCount,
+                                    record.currentCombo, record.maxCombo,
+                                    record.spinAttack, record.b2b,
+                                    record.frames
+                            };
+
+                            {
+                                boost::lock_guard<boost::mutex> guard(mutex);
+                                if (recorder.shouldUpdate(originalConfigure, newRecord)) {
+                                    recorder.update(originalConfigure, newRecord, record.solution);
+                                }
+                            }
+
+                            return true;
+                        };
+                        futures[index] = threadPool_.execute(callable);
+                    }
+
+                    // Wait
+                    for (auto &future : futures) {
+                        future.get();
+                    }
+
+                    // Return solution
+                    auto best = recorder.best();
+                    return best.solution.empty() ? kNoSolution : std::vector<Operation>(best.solution);
+                }
                 default: {
                     assert(false);
                     throw std::runtime_error("Illegal search types: value=" + std::to_string(searchTypes));
@@ -487,6 +604,13 @@ namespace finder {
 						false, lastHoldPriority, fastSearchStartDepth
 					);
 				}
+                case 4: {
+                    // TETR.IO Season 2 All-Spins, T-Spins are judged regularly, keep B2B
+                    return run(
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TETRIOS2, initCombo, initB2b,
+                        true, lastHoldPriority, fastSearchStartDepth
+                    );
+                }
                 default: {
                     throw std::runtime_error("Illegal search type: value=" + std::to_string(searchType));
                 }

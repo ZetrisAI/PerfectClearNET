@@ -67,6 +67,14 @@ namespace finder {
         Fast = 0,
         TSpin = 1,
         AllSpins = 2,
+        // TODO:
+        // - T immobiles aren't spins, they are just non-spin clears
+        // - Should prioritize B2B increase, then All-spin attack power (final clear or spin clear gives +1)
+        // - Any non-spin clears are bad and should be avoided unless no other PC available
+        // - Regular Two-line PCs which clear a double are only +1 B2B, should avoid taking them
+        // - Two-line PCs now sometimes require a non-spin clear, should avoid taking them
+        // - Two-line PCs which can spin clear a single and then a regular single are +2 B2B, should take them
+        TETRIOS2 = 3
     };
 
     template<class M, class C>
@@ -862,6 +870,242 @@ namespace finder {
         M &moveGenerator;
         core::srs_rotate_end::Reachable reachable;
     };
+    
+    template<class M>
+    class Mover<M, TETRIOS2Candidate> {
+    public:
+        Mover<M, TETRIOS2Candidate>(
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
+        ) : factory(factory), moveGenerator(moveGenerator), reachable(reachable) {
+        }
+
+        void move(
+                const Configure &configure,
+                const core::Field &field,
+                const TETRIOS2Candidate &candidate,
+                Solution &solution,
+                std::vector<core::Move> &moves,
+                std::vector<core::ScoredMove> &scoredMoves,
+                core::PieceType pieceType,
+                int nextIndex,
+                int nextHoldIndex,
+                int nextHoldCount,
+                PCFindRunner<M, TETRIOS2Candidate, TETRIOS2Record> *finder
+        ) {
+            assert(0 < candidate.leftLine);
+
+            auto getAttack = configure.alwaysRegularAttack ? getAttackIfAllSpins<true> : getAttackIfAllSpins<false>;
+
+            moveGenerator.search(moves, field, pieceType, candidate.leftLine);
+
+            auto lastDepth = candidate.depth == configure.maxDepth - 1;
+
+            if (configure.fastSearchStartDepth <= candidate.depth) {
+                for (const auto &move : moves) {
+                    auto &blocks = factory.get(pieceType, move.rotateType);
+
+                    auto freeze = core::Field(field);
+                    freeze.put(blocks, move.x, move.y);
+
+                    int numCleared = freeze.clearLineReturnNum();
+
+                    auto &operation = solution[candidate.depth];
+                    operation.pieceType = pieceType;
+                    operation.rotateType = move.rotateType;
+                    operation.x = move.x;
+                    operation.y = move.y;
+
+                    int spinAttack = getAttack(
+                            moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
+                    );
+
+                    // Even if spin with the final piece, the attack is not actually sent (Send only 10 lines by PC; for PPT)
+                    // However, B2B will continue, so add 1 line attack
+                    if (0 < spinAttack && lastDepth) {
+                        spinAttack = 1;
+                    }
+
+                    int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
+                    int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                    int nextCurrentCombo = 0 < numCleared ? candidate.currentCombo + 1 : 0;
+                    int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
+                    int nextTSpinAttack = candidate.spinAttack + spinAttack;
+                    bool nextB2b = 0 < numCleared ? (spinAttack != 0 || numCleared == 4) : candidate.b2b;
+                    int nextFrames = candidate.frames + getFrames(operation);
+
+                    auto nextDepth = candidate.depth + 1;
+
+                    int nextLeftLine = candidate.leftLine - numCleared;
+                    if (nextLeftLine == 0) {
+                        auto bestCandidate = TETRIOS2Candidate{
+                                nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
+                                nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
+                                nextTSpinAttack, nextB2b, nextFrames
+                        };
+                        finder->accept(configure, bestCandidate, solution);
+                        return;
+                    }
+
+                    if (configure.maxDepth <= nextDepth) {
+                        continue;
+                    }
+
+                    if (!validate(freeze, nextLeftLine)) {
+                        continue;
+                    }
+
+                    auto nextCandidate = TETRIOS2Candidate{
+                            nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
+                            nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
+                            nextTSpinAttack, nextB2b, nextFrames
+                    };
+                    finder->search(configure, freeze, nextCandidate, solution);
+                }
+            } else {
+                toScoredMove(moves, factory, pieceType, field, scoredMoves);
+
+                for (const auto &s : scoredMoves) {
+                    auto &operation = solution[candidate.depth];
+                    operation.pieceType = pieceType;
+                    operation.rotateType = s.move.rotateType;
+                    operation.x = s.move.x;
+                    operation.y = s.move.y;
+
+                    int spinAttack = getAttack(
+                            moveGenerator, reachable, factory, field, pieceType, s.move, s.numCleared, candidate.b2b
+                    );
+
+                    // Even if spin with the final piece, the attack is not actually sent (Send only 10 lines by PC; for PPT)
+                    // However, B2B will continue, so add 1 line attack
+                    if (0 < spinAttack && lastDepth) {
+                        spinAttack = 1;
+                    }
+
+                    int nextSoftdropCount = s.move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
+                    int nextLineClearCount = 0 < s.numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                    int nextCurrentCombo = 0 < s.numCleared ? candidate.currentCombo + 1 : 0;
+                    int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
+                    int nextTSpinAttack = candidate.spinAttack + spinAttack;
+                    bool nextB2b = 0 < s.numCleared ? (spinAttack != 0 || s.numCleared == 4) : candidate.b2b;
+                    int nextFrames = candidate.frames + getFrames(operation);
+
+                    auto nextDepth = candidate.depth + 1;
+
+                    int nextLeftLine = candidate.leftLine - s.numCleared;
+                    if (nextLeftLine == 0) {
+                        auto bestCandidate = TETRIOS2Candidate{
+                                nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
+                                nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
+                                nextTSpinAttack, nextB2b, nextFrames
+                        };
+                        finder->accept(configure, bestCandidate, solution);
+                        return;
+                    }
+
+                    if (configure.maxDepth <= nextDepth) {
+                        continue;
+                    }
+
+                    if (!validate(s.field, nextLeftLine)) {
+                        continue;
+                    }
+
+                    auto nextCandidate = TETRIOS2Candidate{
+                            nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
+                            nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
+                            nextTSpinAttack, nextB2b, nextFrames
+                    };
+                    finder->search(configure, s.field, nextCandidate, solution);
+                }
+            }
+        }
+
+        void premove(
+                bool alwaysRegularAttack,
+                int maxDepth,
+                const core::Field &field,
+                const TETRIOS2Candidate &candidate,
+                std::vector<core::Move> &moves,
+                core::PieceType pieceType,
+                int nextIndex,
+                int nextHoldIndex,
+                int nextHoldCount,
+                std::vector<PreOperation<TETRIOS2Candidate>> &output
+        ) {
+            assert(0 < candidate.leftLine);
+
+            auto getAttack = alwaysRegularAttack ? getAttackIfAllSpins<true> : getAttackIfAllSpins<false>;
+
+            moveGenerator.search(moves, field, pieceType, candidate.leftLine);
+
+            auto lastDepth = candidate.depth == maxDepth - 1;
+
+            for (const auto &move : moves) {
+                auto &blocks = factory.get(pieceType, move.rotateType);
+
+                auto freeze = core::Field(field);
+                freeze.put(blocks, move.x, move.y);
+
+                int numCleared = freeze.clearLineReturnNum();
+
+				auto operation = Operation{
+					pieceType,
+					move.rotateType,
+					move.x,
+					move.y
+				};
+
+                int spinAttack = getAttack(
+                        moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
+                );
+
+                // Even if spin with the final piece, the attack is not actually sent (Send only 10 lines by PC; for PPT)
+                // However, B2B will continue, so add 1 line attack
+                if (0 < spinAttack && lastDepth) {
+                    spinAttack = 1;
+                }
+
+                int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
+                int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
+                int nextCurrentCombo = 0 < numCleared ? candidate.currentCombo + 1 : 0;
+                int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
+                int nextTSpinAttack = candidate.spinAttack + spinAttack;
+                bool nextB2b = 0 < numCleared ? (spinAttack != 0 || numCleared == 4) : candidate.b2b;
+				int nextFrames = candidate.frames + getFrames(operation);
+
+                auto nextDepth = candidate.depth + 1;
+
+                int nextLeftLine = candidate.leftLine - numCleared;
+
+                if (!validate(freeze, nextLeftLine)) {
+                    continue;
+                }
+
+                int score = calcScore(freeze, move.harddrop);
+                auto preoperation = PreOperation<TETRIOS2Candidate>{
+                        freeze,
+                        {
+                                nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
+                                nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
+                                nextTSpinAttack, nextB2b, nextFrames
+                        },
+                        pieceType,
+                        move.rotateType,
+                        move.x,
+                        move.y,
+                        move.harddrop,
+                        numCleared,
+                        score,
+                };
+                output.push_back(preoperation);
+            }
+        }
+
+    private:
+        const core::Factory &factory;
+        M &moveGenerator;
+        core::srs_rotate_end::Reachable reachable;
+    };
 
     // Recorder defines
     template<>
@@ -931,6 +1175,29 @@ namespace finder {
 
     private:
         AllSpinsRecord best_;
+    };
+
+    template<>
+    class Recorder<TETRIOS2Candidate, TETRIOS2Record> {
+    public:
+        void clear();
+
+        void update(
+            const Configure& configure, const TETRIOS2Candidate& current, const Solution& solution
+        );
+
+        void update(const TETRIOS2Record& record);
+
+        [[nodiscard]] bool isWorseThanBest(bool leastLineClears, const TETRIOS2Candidate& current) const;
+
+        [[nodiscard]] bool shouldUpdate(const Configure& configure, const TETRIOS2Candidate& newRecord) const;
+
+        [[nodiscard]] const TETRIOS2Record& best() const {
+            return best_;
+        }
+
+    private:
+        TETRIOS2Record best_;
     };
 
     // Entry point to find best perfect clear
@@ -1022,6 +1289,19 @@ namespace finder {
                     );
                     return finder.run(configure, freeze, candidate);
                 }
+                case SearchTypes::TETRIOS2: {
+                    // Create candidate
+                    auto candidate = holdEmpty
+                                     ? TETRIOS2Candidate{0, -1, maxLine, 0, 0, 0, 0,
+                                                         initCombo, initCombo, 0, initB2b, 0}
+                                     : TETRIOS2Candidate{1, 0, maxLine, 0, 0, 0, 0,
+                                                         initCombo, initCombo, 0, initB2b, 0};
+
+                    auto finder = PCFindRunner<M, TETRIOS2Candidate, TETRIOS2Record>(
+                            factory, moveGenerator, reachable
+                    );
+                    return finder.run(configure, freeze, candidate);
+                }
                 default: {
                     assert(false);
                     throw std::runtime_error("Illegal search types: value=" + std::to_string(searchTypes));
@@ -1069,29 +1349,36 @@ namespace finder {
                 case 0: {
                     // No softdrop is top priority
                     return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::Fast, initCombo, initB2b,
-                            false, lastHoldPriority, fastSearchStartDepth
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::Fast, initCombo, initB2b,
+                        false, lastHoldPriority, fastSearchStartDepth
                     );
                 }
                 case 1: {
                     // T-Spin is top priority (mini is zero attack)
                     return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TSpin, initCombo, initB2b,
-                            false, lastHoldPriority, fastSearchStartDepth
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TSpin, initCombo, initB2b,
+                        false, lastHoldPriority, fastSearchStartDepth
                     );
                 }
                 case 2: {
                     // All-Spins is top priority (all spins are judged as regular attack)
                     return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::AllSpins, initCombo, initB2b,
-                            true, lastHoldPriority, fastSearchStartDepth
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::AllSpins, initCombo, initB2b,
+                        true, lastHoldPriority, fastSearchStartDepth
                     );
                 }
                 case 3: {
                     // All-Spins is top priority (mini is zero attack)
                     return run(
-                            field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::AllSpins, initCombo, initB2b,
-                            false, lastHoldPriority, fastSearchStartDepth
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::AllSpins, initCombo, initB2b,
+                        false, lastHoldPriority, fastSearchStartDepth
+                    );
+                }
+                case 4: {
+                    // TETR.IO Season 2 All-Spins, T-Spins are judged regularly, non-spin skims are bad
+                    return run(
+                        field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TETRIOS2, initCombo, initB2b,
+                        true, lastHoldPriority, fastSearchStartDepth
                     );
                 }
                 default: {
