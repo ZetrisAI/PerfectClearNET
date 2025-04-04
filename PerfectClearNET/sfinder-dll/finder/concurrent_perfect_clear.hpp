@@ -605,7 +605,10 @@ namespace finder {
 					);
 				}
                 case 4: {
-                    // TETR.IO Season 2 All-Spins, T-Spins are judged regularly, keep B2B
+                    // TETR.IO Season 2:
+                    // All-Spins is top priority (all spins are judged as regular attack)
+                    // Non-Spin skims are bad
+                    // Two-line PCs are only good if there is a Spin-Single followed by a Single
                     return run(
                         field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TETRIOS2, initCombo, initB2b,
                         true, lastHoldPriority, fastSearchStartDepth

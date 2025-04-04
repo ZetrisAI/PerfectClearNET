@@ -401,7 +401,7 @@ namespace finder {
                 0,
                 0,
                 0,
-                false,
+                0,
                 0,
         };
     }
@@ -442,33 +442,15 @@ namespace finder {
 			: newFrames < oldFrames;
 	}
 
-    bool shouldUpdateLeastLineClear(
-            const TETRIOS2Record &oldRecord, const TETRIOS2Candidate &newRecord
-    ) {
-        if (newRecord.spinAttack != oldRecord.spinAttack) {
-            return oldRecord.spinAttack < newRecord.spinAttack;
-        }
-
-        if (newRecord.softdropCount != oldRecord.softdropCount) {
-            return newRecord.softdropCount < oldRecord.softdropCount;
-        }
-
-        if (newRecord.lineClearCount != oldRecord.lineClearCount) {
-            return newRecord.lineClearCount < oldRecord.lineClearCount;
-        }
-
-        return shouldUpdateFrames(oldRecord, newRecord);
-    }
-
     bool shouldUpdateMostLineClear(
             const TETRIOS2Record &oldRecord, const TETRIOS2Candidate &newRecord
     ) {
-        if (newRecord.spinAttack != oldRecord.spinAttack) {
-            return oldRecord.spinAttack < newRecord.spinAttack;
+        if (newRecord.b2b != oldRecord.b2b) {
+			return oldRecord.b2b < newRecord.b2b;
         }
 
-        if (newRecord.softdropCount != oldRecord.softdropCount) {
-            return newRecord.softdropCount < oldRecord.softdropCount;
+        if (newRecord.spinAttack != oldRecord.spinAttack) {
+            return oldRecord.spinAttack < newRecord.spinAttack;
         }
 
         if (newRecord.maxCombo != oldRecord.maxCombo) {
@@ -477,6 +459,10 @@ namespace finder {
 
         if (newRecord.lineClearCount != oldRecord.lineClearCount) {
             return oldRecord.lineClearCount < newRecord.lineClearCount;
+        }
+
+        if (newRecord.softdropCount != oldRecord.softdropCount) {
+            return newRecord.softdropCount < oldRecord.softdropCount;
         }
 
         return shouldUpdateFrames(oldRecord, newRecord);
@@ -497,10 +483,7 @@ namespace finder {
             return 0 < compare;
         }
 
-        if (configure.leastLineClears) {
-            return shouldUpdateLeastLineClear(best_, newRecord);
-        } else {
-            return shouldUpdateMostLineClear(best_, newRecord);
-        }
+        // always want to do MostLineClear
+        return shouldUpdateMostLineClear(best_, newRecord);
     }
 }

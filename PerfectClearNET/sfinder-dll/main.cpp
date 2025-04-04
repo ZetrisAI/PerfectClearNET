@@ -78,7 +78,30 @@ DLL void action(
 		for (int i = 0; i < max_pieces && _queue[i] != '\0'; i++)
 			pieces.push_back(charToPiece(_queue[i]));
 
-		height += minos_placed % 4 == (height % 2)? 0 : 2;
+		// sus
+		//height += minos_placed % 4 == (height % 2)? 0 : 2;
+
+		// need to clear odd number of lines
+		if (minos_placed % 4 == 2) {
+			if (height % 2 == 0) {
+				height += 1;
+			}
+		}
+		// need to clear even number of lines
+		else {
+			if (height % 2 == 1) {
+				height += 1;
+			}
+		}
+
+		if (height == 0) {
+			height = 2;
+		}
+
+		// for completely skipping two line PC search
+		//if (!twoLine && height < 3) {
+		//	height += 2;
+		//}
 
 		for (; height <= max_height; height += 2) {
 			if ((height * 10 - minos_placed) / 4 + 1 > pieces.size()) break;

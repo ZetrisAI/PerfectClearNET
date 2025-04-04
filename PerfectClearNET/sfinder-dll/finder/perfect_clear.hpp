@@ -67,13 +67,6 @@ namespace finder {
         Fast = 0,
         TSpin = 1,
         AllSpins = 2,
-        // TODO:
-        // - T immobiles aren't spins, they are just non-spin clears
-        // - Should prioritize B2B increase, then All-spin attack power (final clear or spin clear gives +1)
-        // - Any non-spin clears are bad and should be avoided unless no other PC available
-        // - Regular Two-line PCs which clear a double are only +1 B2B, should avoid taking them
-        // - Two-line PCs now sometimes require a non-spin clear, should avoid taking them
-        // - Two-line PCs which can spin clear a single and then a regular single are +2 B2B, should take them
         TETRIOS2 = 3
     };
 
@@ -915,22 +908,52 @@ namespace finder {
                     operation.x = move.x;
                     operation.y = move.y;
 
-                    int spinAttack = getAttack(
-                            moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
+                    // First check if it's a full T-spin
+                    int spinAttack = getAttackIfTSpin(
+                        moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
                     );
 
-                    // Even if spin with the final piece, the attack is not actually sent (Send only 10 lines by PC; for PPT)
-                    // However, B2B will continue, so add 1 line attack
-                    if (0 < spinAttack && lastDepth) {
-                        spinAttack = 1;
+                    // TMinis are ignored this way
+                    bool isTSpin = spinAttack >= 2;
+
+                    // Check All-Spins otherwise
+                    if (!isTSpin) {
+                        spinAttack = getAttack(
+                            moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
+                        );
+                    }
+
+                    // Count Tetrises as spins
+					if (numCleared == 4) {
+						spinAttack = 4 + (candidate.b2b > 0 ? 1 : 0);
+					}
+
+                    // Treat as spin if it's the last clear for the PC.
+                    // B2B still charges and the attack sent out is the same as if there is a spin
+                    bool isSpin = numCleared == candidate.leftLine || spinAttack > 0;
+
+                    //! Clears must be spins
+					if (numCleared > 0 && !isSpin) {
+                        continue;
+					}
+
+                    // For two-line PC, disallow taking the double
+                    if (candidate.leftLine == 2 && numCleared == 2 && candidate.lineClearCount == 0) {
+                        continue;
+                    }
+
+                    // Correct damage values for non-T-Spins
+                    if (isSpin && !isTSpin) {
+                        const int attackValues[] = { 0, 0, 1, 2, 4 };
+                        spinAttack = attackValues[numCleared] + (candidate.b2b > 0 ? 1 : 0);
                     }
 
                     int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                     int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
                     int nextCurrentCombo = 0 < numCleared ? candidate.currentCombo + 1 : 0;
                     int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
-                    int nextTSpinAttack = candidate.spinAttack + spinAttack;
-                    bool nextB2b = 0 < numCleared ? (spinAttack != 0 || numCleared == 4) : candidate.b2b;
+                    int nextSpinAttack = candidate.spinAttack + spinAttack;
+                    int nextB2b = 0 < numCleared ? candidate.b2b + 1 : candidate.b2b;
                     int nextFrames = candidate.frames + getFrames(operation);
 
                     auto nextDepth = candidate.depth + 1;
@@ -940,7 +963,7 @@ namespace finder {
                         auto bestCandidate = TETRIOS2Candidate{
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                                 nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                                nextTSpinAttack, nextB2b, nextFrames
+                                nextSpinAttack, nextB2b, nextFrames
                         };
                         finder->accept(configure, bestCandidate, solution);
                         return;
@@ -957,7 +980,7 @@ namespace finder {
                     auto nextCandidate = TETRIOS2Candidate{
                             nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                             nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                            nextTSpinAttack, nextB2b, nextFrames
+                            nextSpinAttack, nextB2b, nextFrames
                     };
                     finder->search(configure, freeze, nextCandidate, solution);
                 }
@@ -971,22 +994,52 @@ namespace finder {
                     operation.x = s.move.x;
                     operation.y = s.move.y;
 
-                    int spinAttack = getAttack(
-                            moveGenerator, reachable, factory, field, pieceType, s.move, s.numCleared, candidate.b2b
+                    // First check if it's a full T-spin
+                    int spinAttack = getAttackIfTSpin(
+                        moveGenerator, reachable, factory, field, pieceType, s.move, s.numCleared, candidate.b2b
                     );
 
-                    // Even if spin with the final piece, the attack is not actually sent (Send only 10 lines by PC; for PPT)
-                    // However, B2B will continue, so add 1 line attack
-                    if (0 < spinAttack && lastDepth) {
-                        spinAttack = 1;
+                    // TMinis are ignored this way
+                    bool isTSpin = spinAttack >= 2;
+
+                    // Check All-Spins otherwise
+                    if (!isTSpin) {
+                        spinAttack = getAttack(
+                            moveGenerator, reachable, factory, field, pieceType, s.move, s.numCleared, candidate.b2b
+                        );
+                    }
+
+                    // Count Tetrises as spins
+                    if (s.numCleared == 4) {
+                        spinAttack = 4 + (candidate.b2b > 0 ? 1 : 0);
+                    }
+
+                    // Treat as spin if it's the last clear for the PC.
+                    // B2B still charges and the attack sent out is the same as if there is a spin
+                    bool isSpin = s.numCleared == candidate.leftLine || spinAttack > 0;
+
+                    //! Clears must be spins
+                    if (s.numCleared > 0 && !isSpin) {
+                        continue;
+                    }
+
+                    // For two-line PC, disallow taking the double
+                    if (candidate.leftLine == 2 && s.numCleared == 2 && candidate.lineClearCount == 0) {
+                        continue;
+                    }
+
+                    // Correct damage values for non-T-Spins
+                    if (isSpin && !isTSpin) {
+                        const int attackValues[] = { 0, 0, 1, 2, 4 };
+                        spinAttack = attackValues[s.numCleared] + (candidate.b2b > 0 ? 1 : 0);
                     }
 
                     int nextSoftdropCount = s.move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                     int nextLineClearCount = 0 < s.numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
                     int nextCurrentCombo = 0 < s.numCleared ? candidate.currentCombo + 1 : 0;
                     int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
-                    int nextTSpinAttack = candidate.spinAttack + spinAttack;
-                    bool nextB2b = 0 < s.numCleared ? (spinAttack != 0 || s.numCleared == 4) : candidate.b2b;
+                    int nextSpinAttack = candidate.spinAttack + spinAttack;
+                    int nextB2b = 0 < s.numCleared ? candidate.b2b + 1 : candidate.b2b;
                     int nextFrames = candidate.frames + getFrames(operation);
 
                     auto nextDepth = candidate.depth + 1;
@@ -996,7 +1049,7 @@ namespace finder {
                         auto bestCandidate = TETRIOS2Candidate{
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                                 nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                                nextTSpinAttack, nextB2b, nextFrames
+                                nextSpinAttack, nextB2b, nextFrames
                         };
                         finder->accept(configure, bestCandidate, solution);
                         return;
@@ -1013,7 +1066,7 @@ namespace finder {
                     auto nextCandidate = TETRIOS2Candidate{
                             nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                             nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                            nextTSpinAttack, nextB2b, nextFrames
+                            nextSpinAttack, nextB2b, nextFrames
                     };
                     finder->search(configure, s.field, nextCandidate, solution);
                 }
@@ -1055,23 +1108,53 @@ namespace finder {
 					move.y
 				};
 
-                int spinAttack = getAttack(
-                        moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
+                // First check if it's a full T-spin
+                int spinAttack = getAttackIfTSpin(
+                    moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
                 );
 
-                // Even if spin with the final piece, the attack is not actually sent (Send only 10 lines by PC; for PPT)
-                // However, B2B will continue, so add 1 line attack
-                if (0 < spinAttack && lastDepth) {
-                    spinAttack = 1;
+                // TMinis are ignored this way
+                bool isTSpin = spinAttack >= 2;
+
+                // Check All-Spins otherwise
+                if (!isTSpin) {
+                    spinAttack = getAttack(
+                        moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
+                    );
+                }
+
+                // Count Tetrises as spins
+                if (numCleared == 4) {
+                    spinAttack = 4 + (candidate.b2b > 0 ? 1 : 0);
+                }
+
+                // Treat as spin if it's the last clear for the PC.
+                // B2B still charges and the attack sent out is the same as if there is a spin
+                bool isSpin = numCleared == candidate.leftLine || spinAttack > 0;
+
+                //! Clears must be spins
+                if (numCleared > 0 && !isSpin) {
+                    continue;
+                }
+
+                // For two-line PC, disallow taking the double
+                if (candidate.leftLine == 2 && numCleared == 2 && candidate.lineClearCount == 0) {
+                    continue;
+                }
+
+                // Correct damage values for non-T-Spins
+                if (isSpin && !isTSpin) {
+                    const int attackValues[] = { 0, 0, 1, 2, 4 };
+                    spinAttack = attackValues[numCleared] + (candidate.b2b > 0 ? 1 : 0);
                 }
 
                 int nextSoftdropCount = move.harddrop ? candidate.softdropCount : candidate.softdropCount + 1;
                 int nextLineClearCount = 0 < numCleared ? candidate.lineClearCount + 1 : candidate.lineClearCount;
                 int nextCurrentCombo = 0 < numCleared ? candidate.currentCombo + 1 : 0;
                 int nextMaxCombo = candidate.maxCombo < nextCurrentCombo ? nextCurrentCombo : candidate.maxCombo;
-                int nextTSpinAttack = candidate.spinAttack + spinAttack;
-                bool nextB2b = 0 < numCleared ? (spinAttack != 0 || numCleared == 4) : candidate.b2b;
-				int nextFrames = candidate.frames + getFrames(operation);
+                int nextSpinAttack = candidate.spinAttack + spinAttack;
+                int nextB2b = 0 < numCleared ? candidate.b2b + 1 : candidate.b2b;
+                int nextFrames = candidate.frames + getFrames(operation);
 
                 auto nextDepth = candidate.depth + 1;
 
@@ -1087,7 +1170,7 @@ namespace finder {
                         {
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                                 nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                                nextTSpinAttack, nextB2b, nextFrames
+                                nextSpinAttack, nextB2b, nextFrames
                         },
                         pieceType,
                         move.rotateType,
@@ -1293,9 +1376,9 @@ namespace finder {
                     // Create candidate
                     auto candidate = holdEmpty
                                      ? TETRIOS2Candidate{0, -1, maxLine, 0, 0, 0, 0,
-                                                         initCombo, initCombo, 0, initB2b, 0}
+                                                         initCombo, initCombo, 0, initB2b? 1 : 0, 0}
                                      : TETRIOS2Candidate{1, 0, maxLine, 0, 0, 0, 0,
-                                                         initCombo, initCombo, 0, initB2b, 0};
+                                                         initCombo, initCombo, 0, initB2b? 1 : 0, 0};
 
                     auto finder = PCFindRunner<M, TETRIOS2Candidate, TETRIOS2Record>(
                             factory, moveGenerator, reachable
@@ -1375,7 +1458,10 @@ namespace finder {
                     );
                 }
                 case 4: {
-                    // TETR.IO Season 2 All-Spins, T-Spins are judged regularly, non-spin skims are bad
+                    // TETR.IO Season 2:
+                    // All-Spins is top priority (all spins are judged as regular attack)
+                    // Non-Spin skims are bad
+                    // Two-line PCs are only good if there is a Spin-Single followed by a Single
                     return run(
                         field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears, SearchTypes::TETRIOS2, initCombo, initB2b,
                         true, lastHoldPriority, fastSearchStartDepth

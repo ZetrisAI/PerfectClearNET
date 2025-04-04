@@ -150,7 +150,7 @@ namespace finder {
 		int frames;
     };
 
-    // For all spins search
+    // For S2 all spins search
     struct TETRIOS2Candidate {
         int currentIndex;
         int holdIndex;
@@ -162,7 +162,7 @@ namespace finder {
         int currentCombo;
         int maxCombo;
         int spinAttack;
-        bool b2b;
+        int b2b;
         int frames;
     };
 
@@ -183,7 +183,7 @@ namespace finder {
         int currentCombo;
         int maxCombo;
         int spinAttack;
-        bool b2b;
+        int b2b;
         int frames;
     };
 }
