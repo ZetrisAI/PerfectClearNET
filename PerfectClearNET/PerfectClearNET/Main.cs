@@ -94,7 +94,7 @@ namespace PerfectClearNET {
         /// <param name="b2b">Do you have back-to-back?</param>
         public static async void Find(
             int[,] field, int[] queue, int current, int? hold, bool holdAllowed,
-            int maxHeight, bool swap, SearchType searchType, int combo, bool b2b
+            int maxHeight, bool swap, SearchType searchType, int combo, bool b2b, bool two_line
         ) {
 
             int c = 0;
@@ -125,7 +125,7 @@ namespace PerfectClearNET {
             string result = "";
 
             await Task.Run(() => {
-                result = Interface.Process(f, q, h, t, maxHeight, swap, (int)searchType, combo, b2b, out long time);
+                result = Interface.Process(f, q, h, t, maxHeight, swap, (int)searchType, combo, b2b, two_line, out long time);
 
                 LastSolution = new List<Operation>();
                 LastTime = time;

@@ -40,7 +40,7 @@ core::PieceType charToPiece(char x) {
 
 DLL void action(
 	const char* _field, const char* _queue, const char* _hold, int height,
-	int max_height, bool swap, int searchtype, int combo, bool b2b,
+	int max_height, bool swap, int searchtype, int combo, bool b2b, bool twoLine,
 	char* _str, int _len
 ) {
 
@@ -83,7 +83,7 @@ DLL void action(
 		for (; height <= max_height; height += 2) {
 			if ((height * 10 - minos_placed) / 4 + 1 > pieces.size()) break;
 
-			auto result = pcfinder.run(field, pieces, height, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, true, 6);
+			auto result = pcfinder.run(field, pieces, height, holdEmpty, holdAllowed, !swap, searchtype, combo, b2b, twoLine, 6);
 
 			if (!result.empty()) {
 				solved = true;
