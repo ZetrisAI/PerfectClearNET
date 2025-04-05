@@ -403,6 +403,7 @@ namespace finder {
                 0,
                 0,
                 0,
+				false,
         };
     }
 
@@ -415,8 +416,8 @@ namespace finder {
                 solution, hold, extractLastHoldPriority(configure.lastHoldPriority, hold),
                 // from candidate
                 current.currentIndex, current.holdIndex, current.leftLine, current.depth,
-                current.softdropCount, current.holdCount, current.lineClearCount,
-                current.currentCombo, current.maxCombo, current.spinAttack, current.b2b, current.frames
+                current.softdropCount, current.holdCount, current.lineClearCount, current.currentCombo,
+                current.maxCombo, current.spinAttack, current.b2b, current.frames, current.isClean
         };
     }
 
@@ -449,6 +450,17 @@ namespace finder {
 			return oldRecord.b2b < newRecord.b2b;
         }
 
+        int newScore = newRecord.spinAttack + (newRecord.isClean ? 2 : 0);
+		int oldScore = oldRecord.spinAttack + (oldRecord.isClean ? 2 : 0);
+
+		if (newScore != oldScore) {
+			return oldScore < newScore;
+		}
+
+        if (newRecord.isClean != oldRecord.isClean) {
+            return newRecord.isClean;
+        }
+
         if (newRecord.spinAttack != oldRecord.spinAttack) {
             return oldRecord.spinAttack < newRecord.spinAttack;
         }
@@ -461,9 +473,10 @@ namespace finder {
             return oldRecord.lineClearCount < newRecord.lineClearCount;
         }
 
-        if (newRecord.softdropCount != oldRecord.softdropCount) {
-            return newRecord.softdropCount < oldRecord.softdropCount;
-        }
+        // Irrelevant for TETR.IO
+        //if (newRecord.softdropCount != oldRecord.softdropCount) {
+        //    return newRecord.softdropCount < oldRecord.softdropCount;
+        //}
 
         return shouldUpdateFrames(oldRecord, newRecord);
     }

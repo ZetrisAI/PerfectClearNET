@@ -942,6 +942,9 @@ namespace finder {
                         continue;
                     }
 
+                    // Can the PC still be downstacked while keeping B2B even if garbage was tanked?
+                    bool nextIsClean = numCleared == candidate.leftLine && spinAttack > 0;
+
                     // Correct damage values for non-T-Spins
                     if (isSpin && !isTSpin) {
                         const int attackValues[] = { 0, 0, 1, 2, 4 };
@@ -963,7 +966,7 @@ namespace finder {
                         auto bestCandidate = TETRIOS2Candidate{
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                                 nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                                nextSpinAttack, nextB2b, nextFrames
+                                nextSpinAttack, nextB2b, nextFrames, nextIsClean
                         };
                         finder->accept(configure, bestCandidate, solution);
                         return;
@@ -980,7 +983,7 @@ namespace finder {
                     auto nextCandidate = TETRIOS2Candidate{
                             nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                             nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                            nextSpinAttack, nextB2b, nextFrames
+                            nextSpinAttack, nextB2b, nextFrames, nextIsClean
                     };
                     finder->search(configure, freeze, nextCandidate, solution);
                 }
@@ -1028,6 +1031,9 @@ namespace finder {
                         continue;
                     }
 
+                    // Can the PC still be downstacked while keeping B2B even if garbage was tanked?
+                    bool nextIsClean = s.numCleared == candidate.leftLine && spinAttack > 0;
+
                     // Correct damage values for non-T-Spins
                     if (isSpin && !isTSpin) {
                         const int attackValues[] = { 0, 0, 1, 2, 4 };
@@ -1049,7 +1055,7 @@ namespace finder {
                         auto bestCandidate = TETRIOS2Candidate{
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                                 nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                                nextSpinAttack, nextB2b, nextFrames
+                                nextSpinAttack, nextB2b, nextFrames, nextIsClean
                         };
                         finder->accept(configure, bestCandidate, solution);
                         return;
@@ -1066,7 +1072,7 @@ namespace finder {
                     auto nextCandidate = TETRIOS2Candidate{
                             nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                             nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                            nextSpinAttack, nextB2b, nextFrames
+                            nextSpinAttack, nextB2b, nextFrames, nextIsClean
                     };
                     finder->search(configure, s.field, nextCandidate, solution);
                 }
@@ -1142,6 +1148,9 @@ namespace finder {
                     continue;
                 }
 
+                // Can the PC still be downstacked while keeping B2B even if garbage was tanked?
+                bool nextIsClean = numCleared == candidate.leftLine && spinAttack > 0;
+
                 // Correct damage values for non-T-Spins
                 if (isSpin && !isTSpin) {
                     const int attackValues[] = { 0, 0, 1, 2, 4 };
@@ -1170,7 +1179,7 @@ namespace finder {
                         {
                                 nextIndex, nextHoldIndex, nextLeftLine, nextDepth,
                                 nextSoftdropCount, nextHoldCount, nextLineClearCount, nextCurrentCombo, nextMaxCombo,
-                                nextSpinAttack, nextB2b, nextFrames
+                                nextSpinAttack, nextB2b, nextFrames, nextIsClean
                         },
                         pieceType,
                         move.rotateType,
@@ -1375,10 +1384,10 @@ namespace finder {
                 case SearchTypes::TETRIOS2: {
                     // Create candidate
                     auto candidate = holdEmpty
-                                     ? TETRIOS2Candidate{0, -1, maxLine, 0, 0, 0, 0,
-                                                         initCombo, initCombo, 0, initB2b? 1 : 0, 0}
-                                     : TETRIOS2Candidate{1, 0, maxLine, 0, 0, 0, 0,
-                                                         initCombo, initCombo, 0, initB2b? 1 : 0, 0};
+                                     ? TETRIOS2Candidate{0, -1, maxLine, 0, 0, 0, 0, initCombo,
+                                                         initCombo, 0, initB2b? 1 : 0, 0, false}
+                                     : TETRIOS2Candidate{1, 0, maxLine, 0, 0, 0, 0,  initCombo,
+                                                         initCombo, 0, initB2b? 1 : 0, 0, false};
 
                     auto finder = PCFindRunner<M, TETRIOS2Candidate, TETRIOS2Record>(
                             factory, moveGenerator, reachable

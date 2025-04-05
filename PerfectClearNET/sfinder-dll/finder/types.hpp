@@ -164,6 +164,7 @@ namespace finder {
         int spinAttack;
         int b2b;
         int frames;
+        bool isClean;
     };
 
     struct TETRIOS2Record {
@@ -185,6 +186,7 @@ namespace finder {
         int spinAttack;
         int b2b;
         int frames;
+        bool isClean;
     };
 }
 
