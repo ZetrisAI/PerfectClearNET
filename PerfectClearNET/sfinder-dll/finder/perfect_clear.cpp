@@ -404,6 +404,7 @@ namespace finder {
                 0,
                 0,
 				false,
+                false,
         };
     }
 
@@ -417,7 +418,7 @@ namespace finder {
                 // from candidate
                 current.currentIndex, current.holdIndex, current.leftLine, current.depth,
                 current.softdropCount, current.holdCount, current.lineClearCount, current.currentCombo,
-                current.maxCombo, current.spinAttack, current.b2b, current.frames, current.isClean
+				current.maxCombo, current.spinAttack, current.b2b, current.frames, current.isClean, current.isFlatI
         };
     }
 
@@ -446,10 +447,22 @@ namespace finder {
     bool shouldUpdateMostLineClear(
             const TETRIOS2Record &oldRecord, const TETRIOS2Candidate &newRecord
     ) {
+        // non-Spin endings result in really hard to deal with boards if we are forced to tank garbage
+        // so we really really really never want to take one of those unless it's the only option
+		// flat I ending boards are not as bad and they allow for 4 B2B per 4L PC so they are worth it
+		bool newIsSafe = newRecord.isClean || newRecord.isFlatI;
+		bool oldIsSafe = oldRecord.isClean || oldRecord.isFlatI;
+
+		if (newIsSafe != oldIsSafe) {
+			return newIsSafe;
+		}
+
+        // prefer larger B2B per PC
         if (newRecord.b2b != oldRecord.b2b) {
 			return oldRecord.b2b < newRecord.b2b;
         }
 
+        // prefer larger spin attack, but add slight preference for keeping a clean ending
         int newScore = newRecord.spinAttack + (newRecord.isClean ? 2 : 0);
 		int oldScore = oldRecord.spinAttack + (oldRecord.isClean ? 2 : 0);
 
