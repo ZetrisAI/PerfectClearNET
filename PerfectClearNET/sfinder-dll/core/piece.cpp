@@ -303,7 +303,7 @@ namespace core {
         return create(t, i, l, j, s, z, o);
     }
 
-    Factory Factory::createForSSRPlus() {
+    Factory Factory::createForSRSPlus() {
         using namespace std::literals::string_literals;
 
         constexpr std::array<Offset, 20> iCwOffsets{

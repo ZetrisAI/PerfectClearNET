@@ -119,7 +119,6 @@
     <ClInclude Include="finder\thread_pool.hpp" />
     <ClInclude Include="finder\two_lines_pc.hpp" />
     <ClInclude Include="finder\types.hpp" />
-    <ClInclude Include="main.hpp" />
     <ClInclude Include="finder\frames.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

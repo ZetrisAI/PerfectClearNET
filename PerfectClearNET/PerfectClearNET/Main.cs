@@ -68,7 +68,20 @@ namespace PerfectClearNET {
                 abortWait.WaitOne();
             }
         }
-        
+
+        static bool inited = false;
+
+        /// <summary>
+        /// Initializes the Perfect Clear Finder for the desired game.
+        /// </summary>
+        public static void Initialize(PerfectClearGame game) {
+            if (inited) return;
+
+            if (Interface.init_finder(game)) {
+                inited = true;
+            }
+        }
+
         /// <summary>
         /// Changes the thread count.
         /// </summary>

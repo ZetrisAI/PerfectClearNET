@@ -9,7 +9,25 @@ using PerfectClearNET;
 
 namespace Tester {
     public partial class MainForm: Form {
-        public MainForm() => InitializeComponent();
+        public MainForm() {
+            DialogResult result;
+            do {
+                result = MessageBox.Show(
+                    "Is this TETR.IO?",
+                    "PerfectClear Tester",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+            } while (result != DialogResult.Yes && result != DialogResult.No);
+
+            if (result == DialogResult.Yes) {
+                PerfectClear.Initialize(PerfectClearGame.TETRIO);
+            } else {
+                PerfectClear.Initialize(PerfectClearGame.PPT);
+            }
+
+            InitializeComponent();
+        }
 
         int[,] field1 = new int[10, 40] {
             {0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255},

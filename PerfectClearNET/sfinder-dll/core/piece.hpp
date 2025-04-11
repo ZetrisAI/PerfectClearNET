@@ -144,7 +144,7 @@ namespace core {
     public:
         static Factory create();
 
-        static Factory createForSSRPlus();
+        static Factory createForSRSPlus();
 
         static Factory create(
             const Piece& t,

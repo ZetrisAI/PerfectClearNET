@@ -16,6 +16,9 @@ namespace PerfectClearNET {
         public static bool Running { get; private set; } = false;
 
         [DllImport("sfinder-dll.dll")]
+        public static extern bool init_finder(PerfectClearGame game);
+
+        [DllImport("sfinder-dll.dll")]
         public static extern void set_threads(uint threads);
 
         [DllImport("sfinder-dll.dll")]
