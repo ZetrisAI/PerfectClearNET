@@ -27,6 +27,7 @@
             this.Display = new System.Windows.Forms.Label();
             this.Run2 = new System.Windows.Forms.Button();
             this.Run3 = new System.Windows.Forms.Button();
+            this.Run4 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // Run1
@@ -44,7 +45,7 @@
             // Display
             // 
             this.Display.AutoSize = true;
-            this.Display.Location = new System.Drawing.Point(178, 19);
+            this.Display.Location = new System.Drawing.Point(232, 19);
             this.Display.Name = "Display";
             this.Display.Size = new System.Drawing.Size(28, 13);
             this.Display.TabIndex = 1;
@@ -74,12 +75,25 @@
             this.Run3.UseVisualStyleBackColor = false;
             this.Run3.Click += new System.EventHandler(this.Run3_Click);
             // 
+            // Run4
+            // 
+            this.Run4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(24)))), ((int)(((byte)(24)))), ((int)(((byte)(24)))));
+            this.Run4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.Run4.Location = new System.Drawing.Point(178, 12);
+            this.Run4.Name = "Run4";
+            this.Run4.Size = new System.Drawing.Size(48, 27);
+            this.Run4.TabIndex = 3;
+            this.Run4.Text = "Run 4";
+            this.Run4.UseVisualStyleBackColor = false;
+            this.Run4.Click += new System.EventHandler(this.Run4_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            this.ClientSize = new System.Drawing.Size(928, 50);
+            this.ClientSize = new System.Drawing.Size(1038, 50);
+            this.Controls.Add(this.Run4);
             this.Controls.Add(this.Run3);
             this.Controls.Add(this.Display);
             this.Controls.Add(this.Run2);
@@ -102,5 +116,6 @@
         private System.Windows.Forms.Label Display;
         private System.Windows.Forms.Button Run2;
         private System.Windows.Forms.Button Run3;
+        private System.Windows.Forms.Button Run4;
     }
 }
