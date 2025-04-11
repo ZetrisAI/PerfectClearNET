@@ -54,8 +54,10 @@ namespace finder {
     }
 
     //  Caution: mini attack is 0
-    inline int getAttackIfTSpin(
-            core::srs::MoveGenerator &moveGenerator, core::srs_rotate_end::Reachable &reachable,
+    template<bool Allow180, bool AllowSoftdropTap>
+    constexpr int getAttackIfTSpin(
+            core::srs::MoveGenerator<Allow180, AllowSoftdropTap> &moveGenerator,
+            core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable,
             const core::Factory &factory, const core::Field &field,
             core::PieceType pieceType, const core::Move &move, int numCleared, bool b2b
     ) {
@@ -165,9 +167,10 @@ namespace finder {
         return b2b ? 1 : 0;
     }
 
-    template<bool AlwaysRegularAttack>
-    inline int getAttackIfAllSpins(
-            core::srs::MoveGenerator &moveGenerator, core::srs_rotate_end::Reachable &reachable,
+    template<bool AlwaysRegularAttack, bool Allow180, bool AllowSoftdropTap>
+    constexpr int getAttackIfAllSpins(
+            core::srs::MoveGenerator<Allow180, AllowSoftdropTap> &moveGenerator,
+            core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable,
             const core::Factory &factory, const core::Field &field,
             core::PieceType pieceType, const core::Move &move, int numCleared, bool b2b
     ) {

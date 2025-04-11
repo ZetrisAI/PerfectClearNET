@@ -9,12 +9,12 @@
 
 namespace finder {
     // Entry point to find best perfect clear
-    template<class M = core::srs::MoveGenerator>
+    template<bool Allow180 = false, bool AllowSoftdropTap = true, class M = core::srs::MoveGenerator<Allow180, AllowSoftdropTap>>
     class ConcurrentPerfectClearFinder {
     public:
-        ConcurrentPerfectClearFinder<M>(const core::Factory &factory, ThreadPool &threadPool)
+        ConcurrentPerfectClearFinder(const core::Factory &factory, ThreadPool &threadPool)
                 : factory_(factory), threadPool_(threadPool),
-                  moveGenerator_(M(factory)), reachable_(core::srs_rotate_end::Reachable(factory)) {
+                  moveGenerator_(M(factory)), reachable_(core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap>(factory)) {
         }
 
         // If `alwaysRegularAttack` is true, mini spin is judged as regular attack
@@ -25,7 +25,7 @@ namespace finder {
         ) {
             if (maxDepth == 1) {
                 auto moveGenerator = M(factory_);
-                auto finder = PerfectClearFinder<M>(factory_, moveGenerator);
+                auto finder = PerfectClearFinder<Allow180, AllowSoftdropTap, M>(factory_, moveGenerator);
                 return finder.run(
                         field, pieces, maxDepth, maxLine, holdEmpty, holdAllowed, leastLineClears,
 						searchTypes, initCombo, initB2b, alwaysRegularAttack, lastHoldPriority, fastSearchStartDepth
@@ -55,9 +55,6 @@ namespace finder {
                     alwaysRegularAttack,
                     lastHoldPriority,
             };
-
-            // Reset status
-            runnerStatus_.resume();
 
             switch (searchTypes) {
                 case SearchTypes::Fast: {
@@ -118,8 +115,8 @@ namespace finder {
                             };
 
                             auto moveGenerator = M(factory_);
-                            auto reachable = core::srs_rotate_end::Reachable(factory_);
-                            auto finder = PCFindRunner<M, Candidate, Record>(
+                            auto reachable = core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap>(factory_);
+                            auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M, Candidate, Record>(
                                     factory_, moveGenerator, reachable
                             );
 
@@ -239,10 +236,10 @@ namespace finder {
                             };
 
                             auto moveGenerator = M(factory_);
-                            auto reachable = core::srs_rotate_end::Reachable(factory_);
-                            auto finder = PCFindRunner<M, Candidate, Record>(
-									factory_, moveGenerator, reachable
-							);
+                            auto reachable = core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap>(factory_);
+                            auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M>(
+                                factory_, moveGenerator, reachable
+                            );
 
                             Record record;
                             {
@@ -356,8 +353,8 @@ namespace finder {
                             };
 
                             auto moveGenerator = M(factory_);
-                            auto reachable = core::srs_rotate_end::Reachable(factory_);
-                            auto finder = PCFindRunner<M, Candidate, Record>(
+                            auto reachable = core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap>(factory_);
+                            auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M, Candidate, Record>(
                                     factory_, moveGenerator, reachable
                             );
 
@@ -473,8 +470,8 @@ namespace finder {
                             };
 
                             auto moveGenerator = M(factory_);
-                            auto reachable = core::srs_rotate_end::Reachable(factory_);
-                            auto finder = PCFindRunner<M, Candidate, Record>(
+                            auto reachable = core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap>(factory_);
+                            auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M, Candidate, Record>(
                                     factory_, moveGenerator, reachable
                             );
 
@@ -641,7 +638,6 @@ namespace finder {
         }
 
         void abort() {
-            runnerStatus_.abort();
             threadPool_.abort();
         }
 
@@ -652,11 +648,11 @@ namespace finder {
                 const core::Field &field,
                 const C &candidate,
                 M &moveGenerator,
-                core::srs_rotate_end::Reachable &reachable,
+                core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable,
                 std::vector<core::Move> &moves,
                 std::vector<PreOperation<C>> &output
         ) const {
-            auto mover = Mover<M, C>(factory_, moveGenerator, reachable);
+            auto mover = Mover<Allow180, AllowSoftdropTap, M, C>(factory_, moveGenerator, reachable);
 
             int pieceSize = configure.pieces.size();
 
@@ -722,8 +718,7 @@ namespace finder {
         const core::Factory &factory_;
         ThreadPool &threadPool_;
         M moveGenerator_;
-        core::srs_rotate_end::Reachable reachable_;
-        RunnerStatus runnerStatus_{};
+        core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> reachable_;
     };
 }
 

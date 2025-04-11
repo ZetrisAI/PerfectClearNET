@@ -70,41 +70,23 @@ namespace finder {
         TETRIOS2 = 3
     };
 
-    template<class M, class C>
+    template<bool Allow180, bool AllowSoftdropTap, class M, class C>
     class Mover;
 
     template<class C, class R>
     class Recorder;
 
-	class RunnerStatus {
-	public:
-		void resume() {
-			aborted_ = false;
-		}
-
-		void abort() {
-			aborted_ = true;
-		}
-
-		bool aborted() {
-			return aborted_;
-		}
-
-	private:
-		std::atomic<bool> aborted_ = false;
-	};
-
     // Main finder implementation
-    template<class M = core::srs::MoveGenerator, class C = TSpinCandidate, class R = TSpinRecord>
+    template<bool Allow180 = false, bool AllowSoftdropTap = true, class M = core::srs::MoveGenerator<Allow180, AllowSoftdropTap>, class C = TSpinCandidate, class R = TSpinRecord>
     class PCFindRunner {
     public:
-        PCFindRunner<M, C, R>(
-                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
-        ) : mover(Mover<M, C>(factory, moveGenerator, reachable)), recorder(Recorder<C, R>()) {}
+        PCFindRunner(
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable
+        ) : mover(Mover<Allow180, AllowSoftdropTap, M, C>(factory, moveGenerator, reachable)), recorder(Recorder<C, R>()) {}
 
-        PCFindRunner<M, C, R>(
-                PCFindRunner<M, C, R> &&rhs
-        ) : mover(std::move(rhs.mover)), recorder(std::move(rhs.recorder)), {}
+        PCFindRunner(
+                PCFindRunner &&rhs
+        ) : mover(std::move(rhs.mover)), recorder(std::move(rhs.recorder)) {}
 
         Solution run(const Configure &configure, const core::Field &field, const C &candidate) {
             auto best = runRecord(configure, field, candidate);
@@ -216,16 +198,16 @@ namespace finder {
         }
 
     private:
-        Mover<M, C> mover;
+        Mover<Allow180, AllowSoftdropTap, M, C> mover;
         Recorder<C, R> recorder;
     };
 
     // Mover implementations
-    template<class M>
-    class Mover<M, TSpinCandidate> {
+    template<bool Allow180, bool AllowSoftdropTap, class M>
+    class Mover<Allow180, AllowSoftdropTap, M, TSpinCandidate> {
     public:
-        Mover<M, TSpinCandidate>(
-                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
+        Mover(
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable
         ) : factory(factory), moveGenerator(moveGenerator), reachable(reachable) {
         }
 
@@ -240,7 +222,7 @@ namespace finder {
                 int nextIndex,
                 int nextHoldIndex,
                 int nextHoldCount,
-                PCFindRunner<M, TSpinCandidate, TSpinRecord> *finder
+                PCFindRunner<Allow180, AllowSoftdropTap, M> *finder
         ) {
             assert(0 < candidate.leftLine);
 
@@ -264,7 +246,7 @@ namespace finder {
                     operation.x = move.x;
                     operation.y = move.y;
 
-                    int tSpinAttack = !lastDepth ? getAttackIfTSpin(
+                    int tSpinAttack = !lastDepth ? getAttackIfTSpin<Allow180, AllowSoftdropTap>(
                             moveGenerator, reachable, factory, field, pieceType, move, numCleared, candidate.b2b
                     ) : 0;
 
@@ -314,7 +296,7 @@ namespace finder {
                     operation.x = s.move.x;
                     operation.y = s.move.y;
 
-                    int tSpinAttack = !lastDepth ? getAttackIfTSpin(
+                    int tSpinAttack = !lastDepth ? getAttackIfTSpin<Allow180, AllowSoftdropTap>(
                             moveGenerator, reachable, factory, field, pieceType, s.move, s.numCleared, candidate.b2b
                     ) : 0;
 
@@ -433,14 +415,14 @@ namespace finder {
     private:
         const core::Factory &factory;
         M &moveGenerator;
-        core::srs_rotate_end::Reachable reachable;
+        core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> reachable;
     };
 
-    template<class M>
-    class Mover<M, FastCandidate> {
+    template<bool Allow180, bool AllowSoftdropTap, class M>
+    class Mover<Allow180, AllowSoftdropTap, M, FastCandidate> {
     public:
-        Mover<M, FastCandidate>(
-                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
+        Mover(
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable
         ) : factory(factory), moveGenerator(moveGenerator), reachable(reachable) {
         }
 
@@ -455,7 +437,7 @@ namespace finder {
                 int nextIndex,
                 int nextHoldIndex,
                 int nextHoldCount,
-                PCFindRunner<M, FastCandidate, FastRecord> *finder
+                PCFindRunner<Allow180, AllowSoftdropTap, M, FastCandidate, FastRecord> *finder
         ) {
             assert(0 < candidate.leftLine);
 
@@ -625,14 +607,14 @@ namespace finder {
     private:
         const core::Factory &factory;
         M &moveGenerator;
-        core::srs_rotate_end::Reachable reachable;
+        core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> reachable;
     };
 
-    template<class M>
-    class Mover<M, AllSpinsCandidate> {
+    template<bool Allow180, bool AllowSoftdropTap, class M>
+    class Mover<Allow180, AllowSoftdropTap, M, AllSpinsCandidate> {
     public:
-        Mover<M, AllSpinsCandidate>(
-                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
+        Mover(
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable
         ) : factory(factory), moveGenerator(moveGenerator), reachable(reachable) {
         }
 
@@ -647,11 +629,11 @@ namespace finder {
                 int nextIndex,
                 int nextHoldIndex,
                 int nextHoldCount,
-                PCFindRunner<M, AllSpinsCandidate, AllSpinsRecord> *finder
+                PCFindRunner<Allow180, AllowSoftdropTap, M, AllSpinsCandidate, AllSpinsRecord> *finder
         ) {
             assert(0 < candidate.leftLine);
 
-            auto getAttack = configure.alwaysRegularAttack ? getAttackIfAllSpins<true> : getAttackIfAllSpins<false>;
+            auto getAttack = configure.alwaysRegularAttack ? getAttackIfAllSpins<true, Allow180, AllowSoftdropTap> : getAttackIfAllSpins<false, Allow180, AllowSoftdropTap>;
 
             moveGenerator.search(moves, field, pieceType, candidate.leftLine);
 
@@ -791,7 +773,7 @@ namespace finder {
         ) {
             assert(0 < candidate.leftLine);
 
-            auto getAttack = alwaysRegularAttack ? getAttackIfAllSpins<true> : getAttackIfAllSpins<false>;
+            auto getAttack = alwaysRegularAttack ? getAttackIfAllSpins<true, Allow180, AllowSoftdropTap> : getAttackIfAllSpins<false, Allow180, AllowSoftdropTap>;
 
             moveGenerator.search(moves, field, pieceType, candidate.leftLine);
 
@@ -861,14 +843,14 @@ namespace finder {
     private:
         const core::Factory &factory;
         M &moveGenerator;
-        core::srs_rotate_end::Reachable reachable;
+        core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> reachable;
     };
     
-    template<class M>
-    class Mover<M, TETRIOS2Candidate> {
+    template<bool Allow180, bool AllowSoftdropTap, class M>
+    class Mover<Allow180, AllowSoftdropTap, M, TETRIOS2Candidate> {
     public:
-        Mover<M, TETRIOS2Candidate>(
-                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable &reachable
+        Mover(
+                const core::Factory &factory, M &moveGenerator, core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> &reachable
         ) : factory(factory), moveGenerator(moveGenerator), reachable(reachable) {
         }
 
@@ -883,11 +865,11 @@ namespace finder {
                 int nextIndex,
                 int nextHoldIndex,
                 int nextHoldCount,
-                PCFindRunner<M, TETRIOS2Candidate, TETRIOS2Record> *finder
+                PCFindRunner<Allow180, AllowSoftdropTap, M, TETRIOS2Candidate, TETRIOS2Record> *finder
         ) {
             assert(0 < candidate.leftLine);
 
-            auto getAttack = configure.alwaysRegularAttack ? getAttackIfAllSpins<true> : getAttackIfAllSpins<false>;
+            auto getAttack = configure.alwaysRegularAttack ? getAttackIfAllSpins<true, Allow180, AllowSoftdropTap> : getAttackIfAllSpins<false, Allow180, AllowSoftdropTap>;
 
             moveGenerator.search(moves, field, pieceType, candidate.leftLine);
 
@@ -1095,7 +1077,7 @@ namespace finder {
         ) {
             assert(0 < candidate.leftLine);
 
-            auto getAttack = alwaysRegularAttack ? getAttackIfAllSpins<true> : getAttackIfAllSpins<false>;
+            auto getAttack = alwaysRegularAttack ? getAttackIfAllSpins<true, Allow180, AllowSoftdropTap> : getAttackIfAllSpins<false, Allow180, AllowSoftdropTap>;
 
             moveGenerator.search(moves, field, pieceType, candidate.leftLine);
 
@@ -1199,7 +1181,7 @@ namespace finder {
     private:
         const core::Factory &factory;
         M &moveGenerator;
-        core::srs_rotate_end::Reachable reachable;
+        core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> reachable;
     };
 
     // Recorder defines
@@ -1296,11 +1278,11 @@ namespace finder {
     };
 
     // Entry point to find best perfect clear
-    template<class M = core::srs::MoveGenerator>
+    template<bool Allow180 = false, bool AllowSoftdropTap = true, class M = core::srs::MoveGenerator<Allow180, AllowSoftdropTap>>
     class PerfectClearFinder {
     public:
-        PerfectClearFinder<M>(const core::Factory &factory, M &moveGenerator)
-                : factory(factory), moveGenerator(moveGenerator), reachable(core::srs_rotate_end::Reachable(factory)) {
+        PerfectClearFinder(const core::Factory &factory, M &moveGenerator)
+                : factory(factory), moveGenerator(moveGenerator), reachable(core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap>(factory)) {
         }
 
         // If `alwaysRegularAttack` is true, mini spin is judged as regular attack
@@ -1348,7 +1330,7 @@ namespace finder {
                                      : FastCandidate{1, 0, maxLine, 0, 0, 0, 0,
                                                      initCombo, initCombo, 0};
 
-                    auto finder = PCFindRunner<M, FastCandidate, FastRecord>(
+                    auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M, FastCandidate, FastRecord>(
                             factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
@@ -1366,7 +1348,7 @@ namespace finder {
                                      : TSpinCandidate{1, 0, maxLine, 0, 0, 0, 0,
                                                       initCombo, initCombo, 0, initB2b, leftNumOfT, 0};
 
-                    auto finder = PCFindRunner<M, TSpinCandidate, TSpinRecord>(
+                    auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M>(
                             factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
@@ -1379,7 +1361,7 @@ namespace finder {
                                      : AllSpinsCandidate{1, 0, maxLine, 0, 0, 0, 0,
                                                          initCombo, initCombo, 0, initB2b, 0};
 
-                    auto finder = PCFindRunner<M, AllSpinsCandidate, AllSpinsRecord>(
+                    auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M, AllSpinsCandidate, AllSpinsRecord>(
                             factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
@@ -1392,7 +1374,7 @@ namespace finder {
                                      : TETRIOS2Candidate{1, 0, maxLine, 0, 0, 0, 0,  initCombo,
                                                          initCombo, 0, initB2b? 1 : 0, 0, false, false};
 
-                    auto finder = PCFindRunner<M, TETRIOS2Candidate, TETRIOS2Record>(
+                    auto finder = PCFindRunner<Allow180, AllowSoftdropTap, M, TETRIOS2Candidate, TETRIOS2Record>(
                             factory, moveGenerator, reachable
                     );
                     return finder.run(configure, freeze, candidate);
@@ -1512,7 +1494,7 @@ namespace finder {
     private:
         const core::Factory &factory;
         M &moveGenerator;
-        core::srs_rotate_end::Reachable reachable;
+        core::srs_rotate_end::Reachable<Allow180, AllowSoftdropTap> reachable;
     };
 }
 

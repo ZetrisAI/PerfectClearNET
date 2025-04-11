@@ -4,7 +4,6 @@
 #include <string>
 #include <algorithm>
 #include <array>
-#include <cassert>
 
 #include "types.hpp"
 
@@ -20,6 +19,14 @@ namespace core {
         int x;
         int y;
     };
+
+    inline Offset operator+(const Offset &lhs, const Offset &rhs) {
+        return {lhs.x + rhs.x, lhs.y + rhs.y};
+    }
+
+    inline Offset operator-(const Offset &lhs, const Offset &rhs) {
+        return {lhs.x - rhs.x, lhs.y - rhs.y};
+    }
 
     struct Collider {
         Bitboard boards[4];
@@ -67,21 +74,47 @@ namespace core {
 
     class Piece {
     public:
-        template<size_t N>
+        static constexpr int MaxOffsetRotate90 = 5;
+        static constexpr int MaxOffsetRotate180 = 6;
+
+        template<size_t OffsetSizeRotate90>
         static Piece create(
                 PieceType pieceType,
                 const std::string &name,
                 const std::array<Point, 4> &points,
-                const std::array<std::array<Offset, N>, 4> &offsets,
+                const std::array<std::array<Offset, OffsetSizeRotate90>, 4> &offsets,
                 const std::array<Transform, 4> &transforms
+        );
+
+        template<size_t OffsetSizeRotate90, size_t OffsetSizeRotate180>
+        static Piece create(
+                PieceType pieceType,
+                const std::string &name,
+                const std::array<Point, 4> &points,
+                const std::array<std::array<Offset, OffsetSizeRotate90>, 4> &offsets,
+                const std::array<Offset, 24> &rotate180Offsets,
+                const std::array<Transform, 4> &transforms
+        );
+
+        template <size_t OffsetSizeRotate90, size_t OffsetSizeRotate180>
+        static Piece create(
+            PieceType pieceType,
+            const std::string &name,
+            const std::array<Point, 4> &points,
+            const std::array<Offset, MaxOffsetRotate90 * 4> &cwOffsets,
+            const std::array<Offset, MaxOffsetRotate90 * 4> &ccwOffsets,
+            const std::array<Offset, MaxOffsetRotate180 * 4> &rotate180Offsets,
+            const std::array<Transform, 4> &transforms
         );
 
         const PieceType pieceType;
         const std::string name;
         const std::array<Blocks, 4> blocks;
-        const std::array<Offset, 20> rightOffsets;
-        const std::array<Offset, 20> leftOffsets;
+        const std::array<Offset, MaxOffsetRotate90 * 4> rightOffsets; // = cwOffsets
+        const std::array<Offset, MaxOffsetRotate90 * 4> leftOffsets; // = ccwOffsets
+        const std::array<Offset, MaxOffsetRotate180 * 4> rotate180Offsets;
         const size_t offsetsSize;
+        const size_t rotate180OffsetsSize;
         const std::array<Transform, 4> transforms;
         const int32_t uniqueRotateBit;
         const std::array<int32_t, 4> sameShapeRotates;
@@ -91,28 +124,44 @@ namespace core {
                 const PieceType pieceType,
                 const std::string name,
                 const std::array<Blocks, 4> blocks,
-                const std::array<Offset, 20> rightOffsets,
-                const std::array<Offset, 20> leftOffsets,
+                const std::array<Offset, 20> cwOffsets,
+                const std::array<Offset, 20> ccwOffsets,
+                const std::array<Offset, 24> rotate180Offsets,
                 const size_t offsetsSize,
+                const size_t rotate180OffsetsSize,
                 const std::array<Transform, 4> transforms,
                 const int32_t uniqueRotate,
                 const std::array<int32_t, 4> sameShapeRotates
-        ) : pieceType(pieceType), name(name), blocks(blocks), rightOffsets(rightOffsets), leftOffsets(leftOffsets),
-            offsetsSize(offsetsSize), transforms(transforms), uniqueRotateBit(uniqueRotate),
+        ) : pieceType(pieceType), name(name), blocks(blocks),
+            rightOffsets(cwOffsets), leftOffsets(ccwOffsets), rotate180Offsets(rotate180Offsets),
+            offsetsSize(offsetsSize), rotate180OffsetsSize(rotate180OffsetsSize),
+            transforms(transforms), uniqueRotateBit(uniqueRotate),
             sameShapeRotates(sameShapeRotates) {
-        };
+        }
     };
 
     class Factory {
     public:
         static Factory create();
 
+        static Factory createForSSRPlus();
+
+        static Factory create(
+            const Piece& t,
+            const Piece& i,
+            const Piece& l,
+            const Piece& j,
+            const Piece& s,
+            const Piece& z,
+            const Piece& o
+        );
+
         const Piece &get(PieceType piece) const;
 
         const Blocks &get(PieceType piece, RotateType rotate) const;
 
     private:
-        Factory(std::array<Piece, 7> &pieces, std::array<Blocks, 28> &blocks) : pieces(pieces), blocks(blocks) {
+        Factory(const std::array<Piece, 7> &pieces, const std::array<Blocks, 28> &blocks) : pieces(pieces), blocks(blocks) {
         };
 
         const std::array<Piece, 7> pieces;

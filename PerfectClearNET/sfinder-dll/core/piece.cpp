@@ -1,8 +1,41 @@
+#include <cassert>
+
 #include "piece.hpp"
 
 namespace core {
     namespace {
         const uint64_t VALID_BOARD_RANGE = 0xfffffffffffffffL;
+
+        constexpr std::array<Transform, 4> tTransforms{
+            Transform{Offset{0, 0}, RotateType::Spawn},
+            Transform{Offset{0, 0}, RotateType::Right},
+            Transform{Offset{0, 0}, RotateType::Reverse},
+            Transform{Offset{0, 0}, RotateType::Left},
+        };
+        constexpr std::array<Transform, 4> iTransforms{
+            Transform{Offset{0, 0}, RotateType::Spawn},
+            Transform{Offset{0, -1}, RotateType::Left},
+            Transform{Offset{-1, 0}, RotateType::Spawn},
+            Transform{Offset{0, 0}, RotateType::Left},
+        };
+        constexpr std::array<Transform, 4> sTransforms{
+            Transform{Offset{0, 0}, RotateType::Spawn},
+            Transform{Offset{1, 0}, RotateType::Left},
+            Transform{Offset{0, -1}, RotateType::Spawn},
+            Transform{Offset{0, 0}, RotateType::Left},
+        };
+        constexpr std::array<Transform, 4> zTransforms{
+            Transform{Offset{0, 0}, RotateType::Spawn},
+            Transform{Offset{0, 0}, RotateType::Right},
+            Transform{Offset{0, -1}, RotateType::Spawn},
+            Transform{Offset{-1, 0}, RotateType::Right},
+        };
+        constexpr std::array<Transform, 4> oTransforms{
+            Transform{Offset{0, 0}, RotateType::Spawn},
+            Transform{Offset{0, -1}, RotateType::Spawn},
+            Transform{Offset{-1, -1}, RotateType::Spawn},
+            Transform{Offset{-1, 0}, RotateType::Spawn},
+        };
 
         std::array<Point, 4> rotateRight_(std::array<Point, 4> points) {
             return std::array<Point, 4>{
@@ -79,19 +112,26 @@ namespace core {
         return Blocks(rotateType, points, mask, harddropColliders, minmaxX, minmaxY);
     }
 
-    template<size_t N>
+    template<size_t OffsetSizeRotate90>
     Piece Piece::create(
             const PieceType pieceType,
             const std::string &name,
             const std::array<Point, 4> &points,
-            const std::array<std::array<Offset, N>, 4> &offsets,
+            const std::array<std::array<Offset, OffsetSizeRotate90>, 4> &offsets,
             const std::array<Transform, 4> &transforms
     ) {
-        const Blocks &spawn = Blocks::create(RotateType::Spawn, points);
-        const Blocks &right = Blocks::create(RotateType::Right, rotateRight_(points));
-        const Blocks &reverse = Blocks::create(RotateType::Reverse, rotateReverse_(points));
-        const Blocks &left = Blocks::create(RotateType::Left, rotateLeft_(points));
+        return create<OffsetSizeRotate90, 0>(pieceType, name, points,offsets, {}, transforms);
+    }
 
+    template<size_t OffsetSizeRotate90, size_t OffsetSizeRotate180>
+    Piece Piece::create(
+        PieceType pieceType,
+        const std::string &name,
+        const std::array<Point, 4> &points,
+        const std::array<std::array<Offset, OffsetSizeRotate90>, 4> &offsets,
+        const std::array<Offset, 24> &rotate180Offsets,
+        const std::array<Transform, 4> &transforms
+    ) {
         std::array<Offset, 20> rightOffsets{};
         for (int rotate = 0; rotate < 4; ++rotate) {
             const auto &from = offsets[rotate];
@@ -126,6 +166,26 @@ namespace core {
             }
         }
 
+        return create<OffsetSizeRotate90, OffsetSizeRotate180>(
+            pieceType, name, points, rightOffsets, leftOffsets, rotate180Offsets, transforms
+        );
+    }
+
+    template <size_t OffsetSizeRotate90, size_t OffsetSizeRotate180>
+    Piece Piece::create(
+        const PieceType pieceType,
+        const std::string &name,
+        const std::array<Point, 4> &points,
+        const std::array<Offset, 20> &cwOffsets,
+        const std::array<Offset, 20> &ccwOffsets,
+        const std::array<Offset, 24> &rotate180Offsets,
+        const std::array<Transform, 4> &transforms
+    ) {
+        const Blocks &spawn = Blocks::create(RotateType::Spawn, points);
+        const Blocks &right = Blocks::create(RotateType::Right, rotateRight_(points));
+        const Blocks &reverse = Blocks::create(RotateType::Reverse, rotateReverse_(points));
+        const Blocks &left = Blocks::create(RotateType::Left, rotateLeft_(points));
+
         int32_t uniqueRotate = 0;
         for (int rotate = 0; rotate < 4; ++rotate) {
             const auto &transform = transforms[rotate];
@@ -153,8 +213,8 @@ namespace core {
         }
 
         return Piece(pieceType, name, std::array<Blocks, 4>{
-                spawn, right, reverse, left
-        }, rightOffsets, leftOffsets, N, transforms, uniqueRotate, sameShapeRotates);
+            spawn, right, reverse, left
+        }, cwOffsets, ccwOffsets, rotate180Offsets, OffsetSizeRotate90, OffsetSizeRotate180, transforms, uniqueRotate, sameShapeRotates);
     }
 
     BlocksMask Blocks::mask(int leftX, int lowerY) const {
@@ -191,118 +251,201 @@ namespace core {
     Factory Factory::create() {
         using namespace std::literals::string_literals;
 
-        auto iOffsets = std::array<std::array<Offset, 5>, 4>{
+        constexpr auto iOffsets = std::array<std::array<Offset, 5>, 4>{
                 std::array<Offset, 5>{Offset{0, 0}, {-1, 0}, {2, 0}, {-1, 0}, {2, 0}},
                 std::array<Offset, 5>{Offset{-1, 0}, {0, 0}, {0, 0}, {0, 1}, {0, -2}},
                 std::array<Offset, 5>{Offset{-1, 1}, {1, 1}, {-2, 1}, {1, 0}, {-2, 0}},
                 std::array<Offset, 5>{Offset{0, 1}, {0, 1}, {0, 1}, {0, -1}, {0, 2}},
         };
 
-        auto oOffsets = std::array<std::array<Offset, 1>, 4>{
+        constexpr auto oOffsets = std::array<std::array<Offset, 1>, 4>{
                 std::array<Offset, 1>{Offset{0, 0}},
                 std::array<Offset, 1>{Offset{0, -1}},
                 std::array<Offset, 1>{Offset{-1, -1}},
                 std::array<Offset, 1>{Offset{-1, 0}},
         };
 
-        auto otherOffsets = std::array<std::array<Offset, 5>, 4>{
+        constexpr auto otherOffsets = std::array<std::array<Offset, 5>, 4>{
                 std::array<Offset, 5>{Offset{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
                 std::array<Offset, 5>{Offset{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
                 std::array<Offset, 5>{Offset{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
                 std::array<Offset, 5>{Offset{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
         };
 
-        auto t = Piece::create(PieceType::T, "T"s, std::array<Point, 4>{
-                Point{0, 0}, {-1, 0}, {1, 0}, {0, 1},
-        }, otherOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{0, 0}, RotateType::Right},
-                Transform{Offset{0, 0}, RotateType::Reverse},
-                Transform{Offset{0, 0}, RotateType::Left},
-        });
+        const auto t = Piece::create(PieceType::T, "T"s, std::array<Point, 4>{
+            Point{0, 0}, {-1, 0}, {1, 0}, {0, 1},
+        }, otherOffsets, tTransforms);
 
-        auto i = Piece::create(PieceType::I, "I"s, std::array<Point, 4>{
-                Point{0, 0}, {-1, 0}, {1, 0}, {2, 0}
-        }, iOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{0, -1}, RotateType::Left},
-                Transform{Offset{-1, 0}, RotateType::Spawn},
-                Transform{Offset{0, 0}, RotateType::Left},
-        });
+        const auto i = Piece::create(PieceType::I, "I"s, std::array<Point, 4>{
+            Point{0, 0}, {-1, 0}, {1, 0}, {2, 0}
+        }, iOffsets, iTransforms);
 
-        auto l = Piece::create(PieceType::L, "L"s, std::array<Point, 4>{
+        const auto l = Piece::create(PieceType::L, "L"s, std::array<Point, 4>{
                 Point{0, 0}, {-1, 0}, {1, 0}, {1, 1}
-        }, otherOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{0, 0}, RotateType::Right},
-                Transform{Offset{0, 0}, RotateType::Reverse},
-                Transform{Offset{0, 0}, RotateType::Left},
-        });
+        }, otherOffsets, tTransforms);
 
-        auto j = Piece::create(PieceType::J, "J"s, std::array<Point, 4>{
+        const auto j = Piece::create(PieceType::J, "J"s, std::array<Point, 4>{
                 Point{0, 0}, {-1, 0}, {1, 0}, {-1, 1}
-        }, otherOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{0, 0}, RotateType::Right},
-                Transform{Offset{0, 0}, RotateType::Reverse},
-                Transform{Offset{0, 0}, RotateType::Left},
-        });
+        }, otherOffsets, tTransforms);
 
-        auto s = Piece::create(PieceType::S, "S"s, std::array<Point, 4>{
-                Point{0, 0}, {-1, 0}, {0, 1}, {1, 1}
-        }, otherOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{1, 0}, RotateType::Left},
-                Transform{Offset{0, -1}, RotateType::Spawn},
-                Transform{Offset{0, 0}, RotateType::Left},
-        });
+        const auto s = Piece::create(PieceType::S, "S"s, std::array<Point, 4>{
+            Point{0, 0}, {-1, 0}, {0, 1}, {1, 1}
+        }, otherOffsets, sTransforms);
 
-        auto z = Piece::create(PieceType::Z, "Z"s, std::array<Point, 4>{
-                Point{0, 0}, {1, 0}, {0, 1}, {-1, 1}
-        }, otherOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{0, 0}, RotateType::Right},
-                Transform{Offset{0, -1}, RotateType::Spawn},
-                Transform{Offset{-1, 0}, RotateType::Right},
-        });
+        const auto z = Piece::create(PieceType::Z, "Z"s, std::array<Point, 4>{
+            Point{0, 0}, {1, 0}, {0, 1}, {-1, 1}
+        }, otherOffsets, zTransforms);
 
-        auto o = Piece::create(PieceType::O, "O"s, std::array<Point, 4>{
-                Point{0, 0}, {1, 0}, {0, 1}, {1, 1}
-        }, oOffsets, std::array<Transform, 4>{
-                Transform{Offset{0, 0}, RotateType::Spawn},
-                Transform{Offset{0, -1}, RotateType::Spawn},
-                Transform{Offset{-1, -1}, RotateType::Spawn},
-                Transform{Offset{-1, 0}, RotateType::Spawn},
-        });
+        const auto o = Piece::create(PieceType::O, "O"s, std::array<Point, 4>{
+            Point{0, 0}, {1, 0}, {0, 1}, {1, 1}
+        }, oOffsets, oTransforms);
 
-        auto pieces = std::array<Piece, 7>{
-                t, i, l, j, s, z, o
+        return create(t, i, l, j, s, z, o);
+    }
+
+    Factory Factory::createForSSRPlus() {
+        using namespace std::literals::string_literals;
+
+        constexpr std::array<Offset, 20> iCwOffsets{
+            // from Spawn
+            Offset{1, 0}, {2, 0},{ -1, 0},{-1, -1},{ 2,2},
+            // from Right
+            Offset{0, -1}, {-1, -1},{ 2, -1},{-1,1},{ 2, -2},
+            // from Reverse
+            Offset{-1, 0}, { 1, 0},{-2, 0},{ 1,1},{-2, -2},
+            // from Left
+            Offset{0, 1}, {1, 1},{ -2, 1},{ 2, -1},{-2,2},
+        };
+        constexpr std::array<Offset, 20> iCcwOffsets{
+            // from Spawn
+            Offset{0, -1}, { -1, -1},{2, -1},{ 2, -2},{-1,2},
+            // from Right
+            Offset{-1, 0}, { -2, 0},{1, 0},{-2, -2},{ 1,1},
+            // from Reverse
+            Offset{0, 1}, {-2, 1},{ 1, 1},{-2,2},{ 1, -1},
+            // from Left
+            Offset{1, 0}, { 2, 0},{-1, 0},{ 2,2},{-1, -1},
         };
 
-        auto blocks = std::array<Blocks, 4 * 7>{
-                t.blocks[RotateType::Spawn], t.blocks[RotateType::Right],
-                t.blocks[RotateType::Reverse], t.blocks[RotateType::Left],
-
-                i.blocks[RotateType::Spawn], i.blocks[RotateType::Right],
-                i.blocks[RotateType::Reverse], i.blocks[RotateType::Left],
-
-                l.blocks[RotateType::Spawn], l.blocks[RotateType::Right],
-                l.blocks[RotateType::Reverse], l.blocks[RotateType::Left],
-
-                j.blocks[RotateType::Spawn], j.blocks[RotateType::Right],
-                j.blocks[RotateType::Reverse], j.blocks[RotateType::Left],
-
-                s.blocks[RotateType::Spawn], s.blocks[RotateType::Right],
-                s.blocks[RotateType::Reverse], s.blocks[RotateType::Left],
-
-                z.blocks[RotateType::Spawn], z.blocks[RotateType::Right],
-                z.blocks[RotateType::Reverse], z.blocks[RotateType::Left],
-
-                o.blocks[RotateType::Spawn], o.blocks[RotateType::Right],
-                o.blocks[RotateType::Reverse], o.blocks[RotateType::Left],
+        constexpr auto oOffsets = std::array<std::array<Offset, 1>, 4>{
+                std::array<Offset, 1>{Offset{0, 0}},
+                std::array<Offset, 1>{Offset{0, -1}},
+                std::array<Offset, 1>{Offset{-1, -1}},
+                std::array<Offset, 1>{Offset{-1, 0}},
         };
 
-        return Factory(pieces, blocks);
+        constexpr auto otherOffsets = std::array<std::array<Offset, 5>, 4>{
+                std::array<Offset, 5>{Offset{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+                std::array<Offset, 5>{Offset{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},
+                std::array<Offset, 5>{Offset{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
+                std::array<Offset, 5>{Offset{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},
+        };
+
+        constexpr std::array<Offset, 24> oRotate180Offsets{
+            // from Spawn
+            Offset{1, 1}, {},{},{},{},{},
+            // from Right
+            Offset{1, -1}, {},{},{},{},{},
+            // from Reverse
+            Offset{-1, -1}, {},{},{},{},{},
+            // from Left
+            Offset{-1, 1}, {},{},{},{},{},
+        };
+
+        constexpr std::array<Offset, 24> otherRotate180Offsets{
+            // from Spawn
+            Offset{0, 0}, { 0, 1},{1, 1},{ -1, 1},{1, 0},{-1,0},
+            // from Right
+            Offset{0, 0}, { 1, 0},{1, 2},{1, 1},{ 0,2},{0,1},
+            // from Reverse
+            Offset{0, 0}, { 0, -1},{-1, -1},{ 1, -1},{-1, 0},{1,0},
+            // from Left
+            Offset{0, 0}, { -1, 0},{-1, 2},{ -1,1},{0, 2},{0,1},
+        };
+
+        constexpr auto i0To2Offset = Offset{1, -1};
+        constexpr auto iRToLOffset = Offset{-1, -1};
+        const std::array<Offset, 24> iRotate180Offsets{
+            // from Spawn
+            otherRotate180Offsets[0] + i0To2Offset, otherRotate180Offsets[1] + i0To2Offset, otherRotate180Offsets[2] + i0To2Offset,
+            otherRotate180Offsets[3] + i0To2Offset, otherRotate180Offsets[4] + i0To2Offset, otherRotate180Offsets[5] + i0To2Offset,
+            // from Right
+            otherRotate180Offsets[6] + iRToLOffset, otherRotate180Offsets[7] + iRToLOffset, otherRotate180Offsets[8] + iRToLOffset,
+            otherRotate180Offsets[9] + iRToLOffset, otherRotate180Offsets[10] + iRToLOffset, otherRotate180Offsets[11] + iRToLOffset,
+            // from Reverse
+            otherRotate180Offsets[12] - i0To2Offset, otherRotate180Offsets[13] - i0To2Offset, otherRotate180Offsets[14] - i0To2Offset,
+            otherRotate180Offsets[15] - i0To2Offset, otherRotate180Offsets[16] - i0To2Offset, otherRotate180Offsets[17] - i0To2Offset,
+            // from Left
+            otherRotate180Offsets[18] - iRToLOffset, otherRotate180Offsets[19] - iRToLOffset, otherRotate180Offsets[20] - iRToLOffset,
+            otherRotate180Offsets[21] - iRToLOffset, otherRotate180Offsets[22] - iRToLOffset, otherRotate180Offsets[23] - iRToLOffset,
+        };
+
+        const auto t = Piece::create<5, 6>(PieceType::T, "T"s, std::array<Point, 4>{
+            Point{0, 0}, {-1, 0}, {1, 0}, {0, 1},
+        }, otherOffsets, otherRotate180Offsets, tTransforms);
+
+        const auto i = Piece::create<5, 6>(PieceType::I, "I"s, std::array<Point, 4>{
+            Point{0, 0}, {-1, 0}, {1, 0}, {2, 0}
+        }, iCwOffsets, iCcwOffsets, iRotate180Offsets, iTransforms);
+
+        const auto l = Piece::create<5, 6>(PieceType::L, "L"s, std::array<Point, 4>{
+                Point{0, 0}, {-1, 0}, {1, 0}, {1, 1}
+        }, otherOffsets, otherRotate180Offsets, tTransforms);
+
+        const auto j = Piece::create<5, 6>(PieceType::J, "J"s, std::array<Point, 4>{
+                Point{0, 0}, {-1, 0}, {1, 0}, {-1, 1}
+        }, otherOffsets, otherRotate180Offsets, tTransforms);
+
+        const auto s = Piece::create<5, 6>(PieceType::S, "S"s, std::array<Point, 4>{
+            Point{0, 0}, {-1, 0}, {0, 1}, {1, 1}
+        }, otherOffsets, otherRotate180Offsets, sTransforms);
+
+        const auto z = Piece::create<5, 6>(PieceType::Z, "Z"s, std::array<Point, 4>{
+            Point{0, 0}, {1, 0}, {0, 1}, {-1, 1}
+        }, otherOffsets, otherRotate180Offsets, zTransforms);
+
+        const auto o = Piece::create<1, 1>(PieceType::O, "O"s, std::array<Point, 4>{
+            Point{0, 0}, {1, 0}, {0, 1}, {1, 1}
+        }, oOffsets, oRotate180Offsets, oTransforms);
+
+        return create(t, i, l, j, s, z, o);
+    }
+
+    Factory Factory::create(
+        const Piece& t,
+        const Piece& i,
+        const Piece& l,
+        const Piece& j,
+        const Piece& s,
+        const Piece& z,
+        const Piece& o
+    ) {
+        const std::array<Piece, 7> pieces{
+            t, i, l, j, s, z, o
+        };
+        const std::array<Blocks, 4 * 7> blocks{
+            t.blocks[RotateType::Spawn], t.blocks[RotateType::Right],
+            t.blocks[RotateType::Reverse], t.blocks[RotateType::Left],
+
+            i.blocks[RotateType::Spawn], i.blocks[RotateType::Right],
+            i.blocks[RotateType::Reverse], i.blocks[RotateType::Left],
+
+            l.blocks[RotateType::Spawn], l.blocks[RotateType::Right],
+            l.blocks[RotateType::Reverse], l.blocks[RotateType::Left],
+
+            j.blocks[RotateType::Spawn], j.blocks[RotateType::Right],
+            j.blocks[RotateType::Reverse], j.blocks[RotateType::Left],
+
+            s.blocks[RotateType::Spawn], s.blocks[RotateType::Right],
+            s.blocks[RotateType::Reverse], s.blocks[RotateType::Left],
+
+            z.blocks[RotateType::Spawn], z.blocks[RotateType::Right],
+            z.blocks[RotateType::Reverse], z.blocks[RotateType::Left],
+
+            o.blocks[RotateType::Spawn], o.blocks[RotateType::Right],
+            o.blocks[RotateType::Reverse], o.blocks[RotateType::Left],
+        };
+        return Factory{pieces, blocks};
     }
 
     const Piece &Factory::get(PieceType piece) const {

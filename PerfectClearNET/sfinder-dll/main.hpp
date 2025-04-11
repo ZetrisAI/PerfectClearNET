@@ -14,7 +14,7 @@
 
 auto factory = core::Factory::create();
 auto threadPool = finder::ThreadPool(1);
-auto pcfinder = finder::ConcurrentPerfectClearFinder<core::srs::MoveGenerator>(factory, threadPool);
+auto pcfinder = finder::ConcurrentPerfectClearFinder<false, true>(factory, threadPool);
 
 static const unsigned char BitsSetTable256[256] = 
 {
