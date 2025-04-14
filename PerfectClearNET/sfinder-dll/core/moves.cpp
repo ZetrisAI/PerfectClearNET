@@ -6,6 +6,7 @@ namespace core {
     namespace {
         constexpr unsigned int kFieldWidthUnsigned = FIELD_WIDTH;
         constexpr int kFieldWidth = FIELD_WIDTH;
+		constexpr int kMaxFieldHeight = MAX_FIELD_HEIGHT;
     }
 
     namespace {
