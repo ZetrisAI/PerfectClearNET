@@ -105,6 +105,7 @@ namespace PerfectClearNET {
         /// <param name="searchType">The search priority, in order: no softdrop, T-spin, All-spin with Mini, All-spin without Mini, TETR.IO Season 2 keep B2B.</param>
         /// <param name="combo">The combo count.</param>
         /// <param name="b2b">Do you have back-to-back?</param>
+        /// <param name="two_line">Whether to optimize the current Perfect Clear for a two-line follow-up.</param>
         public static async void Find(
             int[,] field, int[] queue, int current, int? hold, bool holdAllowed,
             int maxHeight, bool swap, SearchType searchType, int combo, bool b2b, bool two_line
