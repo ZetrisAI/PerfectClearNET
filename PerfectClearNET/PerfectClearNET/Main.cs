@@ -54,19 +54,17 @@ namespace PerfectClearNET {
 
         static PerfectClear() {}
 
-        static ManualResetEvent abortWait;
-
         /// <summary>
         /// Aborts the currently running search, if there is one.
         /// </summary>
         public static void Abort() {
-            if (Interface.Running) {
-                abortWait = new ManualResetEvent(false);
+            if (!Interface.Running) return;
 
-                Interface.SetAbort();
+            var abortWait = AbortCoordinator.CreateWaiter();
 
-                abortWait.WaitOne();
-            }
+            Interface.SetAbort();
+
+            abortWait();
         }
 
         static bool inited = false;
@@ -154,7 +152,7 @@ namespace PerfectClearNET {
 
                 Finished?.Invoke(solved);
 
-                abortWait?.Set();
+                AbortCoordinator.WakeWaiters();
             });
         }
     }
