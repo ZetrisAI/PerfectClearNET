@@ -14,8 +14,21 @@ namespace PerfectClearNET {
                 waits.Add(wait);
 
             return () => {
-                wait.WaitOne();
-                wait.Dispose();
+                try {
+                    while (true) {
+                        if (wait.WaitOne(200))
+                            return;
+
+                        if (!Interface.Running) {
+                            // We're in the fucking stupid ass undebuggable deadlock
+                            lock (locker)
+                                waits.Remove(wait);
+                            return;
+                        }
+                    }
+                } finally {
+                    wait.Dispose();
+                }
             };
         }
 
