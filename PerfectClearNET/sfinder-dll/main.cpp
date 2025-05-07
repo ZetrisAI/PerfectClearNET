@@ -35,8 +35,6 @@ std::optional<PPTFinder> pptfinder;
 std::optional<TETRIOFinder> tetriofinder;
 Game game = Game::None;
 
-#pragma unmanaged
-
 DLL void set_abort(Callback handler) {
 	Abort = handler;
 }
@@ -186,9 +184,13 @@ DLL void action(
 	std::copy(a.c_str(), a.c_str() + a.length() + 1, _str);
 }
 
+// Managed code may not be run under loader lock,
+// including the DLL entrypoint and calls reached from the DLL entrypoint
+#pragma managed(push, off)
 BOOL WINAPI DllMain(HANDLE handle, DWORD reason, LPVOID reserved) {
 	if (reason == DLL_PROCESS_DETACH)
 		threadPool.shutdown();
 
 	return TRUE;
 }
+#pragma managed(pop)
